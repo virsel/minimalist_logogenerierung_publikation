@@ -1,0 +1,242 @@
+
+
+
+\subsection{Prompts für die Literaturrecherche}\label{app:lit_search}
+
+Die folgenden Beispiele dokumentieren, wie generative KI-Sprachmodelle (\textcite{Google_Gemini25Pro}) zur Unterstützung der systematischen Literaturrecherche eingesetzt wurden.
+
+\vspace{1cm}
+
+\begin{tabular}{@{}p{0.2\textwidth} p{0.7\textwidth}@{}}
+    \textbf{Tool}    & Gemini 2.5 Pro                                                                                                                                                                                                                                                            \\
+                     & 01.09.2025                                                                                                                                                                                                                                                                \\
+    \midrule
+    \textbf{Prompt}  & Erstelle eine Suchanfrage für Google Scholar, um wissenschaftliche Publikationen zum Thema der generativen KI für Logodesign zu identifizieren. Der Fokus liegt auf den fundamentalen Modellen und Techniken, insbesondere auf aktuellen Ansätzen wie Diffusionsmodellen. \\
+    \midrule
+    \textbf{Ausgabe} & \texttt{(``generative AI'' OR ``diffusion models'' OR GANs) AND (``logo design'' OR ``brand identity'' OR ``visual identity'') AND (framework OR model OR technique OR approach)}                                                                                         \\
+\end{tabular}
+
+\vspace{1cm}
+
+\begin{tabular}{@{}p{0.2\textwidth} p{0.7\textwidth}@{}}
+    \textbf{Tool}    & Gemini 2.5 Pro                                                                                                                                                                                                                                                                                                     \\
+                     & 01.09.2025                                                                                                                                                                                                                                                                                                         \\
+    \midrule
+    \textbf{Prompt}  & Formuliere eine Suchanfrage für die Datenbank IEEE Xplore. Ziel ist die Recherche von Publikationen, die den Einsatz von ControlNet im Kontext der Design-Automatisierung oder Logo-Generierung untersuchen. Von besonderem Interesse sind Methoden zur verbesserten strukturellen Kontrolle bei der Bildsynthese. \\
+    \midrule
+    \textbf{Ausgabe} & \texttt{(``ControlNet'' OR ``structural control'' OR ``spatial control'') AND (``generative models'' OR ``diffusion models'') AND (``design automation'' OR ``logo generation'' OR ``image synthesis'')}                                                                                                           \\
+\end{tabular}
+
+\vspace{1cm}
+
+\begin{tabular}{@{}p{0.2\textwidth} p{0.7\textwidth}@{}}
+    \textbf{Tool}    & Gemini 2.5 Pro                                                                                                                                                                                                                                                                          \\
+                     & 02.09.2025                                                                                                                                                                                                                                                                              \\
+    \midrule
+    \textbf{Prompt}  & Recherchiere auf arXiv nach den einflussreichsten Papern zu generativen KI-Modellen für das Logodesign. Bitte liste die Schlüsselpublikationen auf, die sich mit Diffusionsmodellen, GANs und insbesondere ControlNet im Kontext der strukturell-konditionierten Bildsynthese befassen. \\
+    \midrule
+    \textbf{Ausgabe} & 1. "High-Resolution Image Synthesis with Latent Diffusion Models" (Rombach et al., 2022): Grundlegendes Paper zu Stable Diffusion. \newline
+    2. "Adding Conditional Control to Text-to-Image Diffusion Models" (Zhang et al., 2023): Stellt die ControlNet-Architektur vor. \newline
+    3. "Generative Adversarial Nets" (Goodfellow et al., 2014): Das ursprüngliche Paper, das GANs eingeführt hat.                                                                                                                                                                                              \\
+\end{tabular}
+
+
+\subsection{Prompt zur Generierung des Minimalismus-Scores}\label{app:prompt_minimalism}
+Der folgende Prompt diente als Grundlage, um mit einem großen Sprachmodell (LLM) eine initiale Version der Python-Funktion \texttt{calculate\_minimalism\_score} (siehe Quelltext \ref{lst:minimalism_score}) zu generieren. Die finale Implementierung, insbesondere die Gewichtung der Metriken, wurde anschließend manuell verfeinert.
+
+\vspace{1cm}
+
+\begin{tabular}{@{}p{0.2\textwidth} p{0.7\textwidth}@{}}
+    \textbf{Tool}   & \textcite{Google_Gemini25Pro}                                                                                                                                                                                                                                                                                                                                                                                                                                                               \\
+                    & 20.09.2025                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  \\
+    \midrule
+    \textbf{Prompt} & Erstelle eine Python-Funktion `calculate\_minimalism\_score`, die einen Pandas DataFrame als Eingabe erhält. Der DataFrame enthält die Spalten: 'dominant\_colors', 'edge\_ratio', 'num\_contours', 'whitespace\_ratio', und 'color\_variance'. Die Funktion soll für jede Zeile einen "Minimalismus-Score" von 0-100 berechnen, wobei ein höherer Wert minimalistischer ist. Normalisiere jede Metrik, kombiniere sie zu einem Gesamt-Score und gib das Ergebnis als Pandas Series zurück. \\
+\end{tabular}
+
+\subsection{Evaluierte Hyperparameterkombinationen des \ac{LoRA}-Trainings}\label{app:hyperpara_kombis}
+\begin{lstlisting}[language=Python, caption={Python-Code zur Definition der Hyperparameterkombinationen für das \ac{LoRA}-Training}, label={lst:traing_hyperparams}]
+HYPERPARAMETER_MAP = {
+    # Attention-only modules
+    "attn_rank4_lr1e-5":  {"lora_r": 4, "learning_rate": 1e-5, "lora_target_modules": "attn_only"},
+    "attn_rank4_lr1e-4":  {"lora_r": 4, "learning_rate": 1e-4, "lora_target_modules": "attn_only"},
+    "attn_rank8_lr1e-5":  {"lora_r": 8, "learning_rate": 1e-5, "lora_target_modules": "attn_only"},
+    "attn_rank8_lr1e-4":  {"lora_r": 8, "learning_rate": 1e-4, "lora_target_modules": "attn_only"},
+    "attn_rank16_lr1e-6": {"lora_r": 16, "learning_rate": 1e-6, "lora_target_modules": "attn_only"},
+    "attn_rank16_lr1e-5": {"lora_r": 16, "learning_rate": 1e-5, "lora_target_modules": "attn_only"},
+    "attn_rank16_lr1e-4": {"lora_r": 16, "learning_rate": 1e-4, "lora_target_modules": "attn_only"},
+    "attn_rank32_lr1e-6": {"lora_r": 32, "learning_rate": 1e-6, "lora_target_modules": "attn_only"},
+    "attn_rank32_lr1e-5": {"lora_r": 32, "learning_rate": 1e-5, "lora_target_modules": "attn_only"},
+    "attn_rank32_lr1e-4": {"lora_r": 32, "learning_rate": 1e-4, "lora_target_modules": "attn_only"},
+
+    # Extended modules (Attention + MLP)
+    "ext_rank4_lr1e-5":   {"lora_r": 4, "learning_rate": 1e-5, "lora_target_modules": "extended"},
+    "ext_rank4_lr1e-4":   {"lora_r": 4, "learning_rate": 1e-4, "lora_target_modules": "extended"},
+    "ext_rank8_lr1e-5":   {"lora_r": 8, "learning_rate": 1e-5, "lora_target_modules": "extended"},
+    "ext_rank8_lr1e-4":   {"lora_r": 8, "learning_rate": 1e-4, "lora_target_modules": "extended"},
+    "ext_rank16_lr1e-6":  {"lora_r": 16, "learning_rate": 1e-6, "lora_target_modules": "extended"},
+    "ext_rank16_lr1e-5":  {"lora_r": 16, "learning_rate": 1e-5, "lora_target_modules": "extended"},
+    "ext_rank16_lr1e-4":  {"lora_r": 16, "learning_rate": 1e-4, "lora_target_modules": "extended"},
+    "ext_rank32_lr1e-6":  {"lora_r": 32, "learning_rate": 1e-6, "lora_target_modules": "extended"},
+    "ext_rank32_lr1e-5":  {"lora_r": 32, "learning_rate": 1e-5, "lora_target_modules": "extended"},
+    "ext_rank32_lr1e-4":  {"lora_r": 32, "learning_rate": 1e-4, "lora_target_modules": "extended"},
+}
+
+LORA_TARGET_MODULES_MAP = {
+    "attn_only": ["to_q", "to_k", "to_v"],
+    "extended": ["to_q", "to_k", "to_v", "to_out.0", "proj_in", "proj_out"],
+}
+\end{lstlisting}
+
+\subsection{Fallbeispiele zur qualitativen Evaluation}\label{app:fallbeispiele}
+
+Für die qualitative Evaluation wurden vier repräsentative Fallbeispiele (F1, F2, F3, F5; Abb. \ref{fig:fallbeispiel_1}, \ref{fig:fallbeispiel_2}, \ref{fig:fallbeispiel_3}, \ref{fig:fallbeispiel_5}) aus dem Testdatensatz ausgewählt, um verschiedene Logo-Typen abzudecken: Wortmarken, Bildmarken (piktoriale und abstrakte) und kombinierte Marken. Ergänzt wurden diese durch Fallbeispiel F4 (Abb. \ref{fig:fallbeispiel_4}), ein Monogramm basierend auf einer handgezeichneten Skizze, um die Modellleistung bei einer authentischen menschlichen Eingabe zu prüfen. Diese Diversität ermöglicht eine umfassende Bewertung der Modellfähigkeiten über verschiedene Design-Kategorien hinweg.
+
+Für jedes Fallbeispiel generierten beide Modelle -- das Basismodell (Stable Diffusion v1.5 mit ControlNet) sowie das feinabgestimmte Modell -- unter Verwendung der zugehörigen Skizze und des Text-Prompts jeweils ein Logo. Die Generierung erfolgte mit exakt einer Iteration pro Modell ohne nachträgliche Auswahl oder Optimierung (kein Cherry-Picking), um eine objektive und reproduzierbare Darstellung der tatsächlichen Modellleistung zu gewährleisten.
+
+Alle Beispiele verwenden denselben negativen Prompt zur Vermeidung unerwünschter Artefakte.
+
+\textbf{Negativer Prompt (für alle Fallbeispiele):}
+\textit{sketch, photorealistic, pattern in background, noisy, blurry, watermark}
+
+\subsubsection*{Fallbeispiel 1 (F1): Bildmarke -- Piktoriale Marke}
+
+\textbf{Prompt:}
+\textit{minimalistic logo, solid background; description: Bird Fork United states; tags: abstract, sharp, vector art, even edges, black and white}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/amazing_logo_v4000313_sketch_256.png}
+        \caption{Eingabe-Skizze}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/amazing_logo_v4000313_logo_basis_256.png}
+        \caption{Basismodell}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/amazing_logo_v4000313_logo_finetune_256.png}
+        \caption{Finetuned Modell}
+    \end{subfigure}
+    \caption{Fallbeispiel 1: Bildmarke -- Piktoriale Marke mit Vogel-Gabel-Motiv}
+    \label{fig:fallbeispiel_1}
+\end{figure}
+
+\subsubsection*{Fallbeispiel 2 (F2): Wortmarke}
+
+\textbf{Prompt:}
+\textit{minimalistic logo, solid background; description: and Impact black red mark Advertising exclamation; tags: abstract, sharp, vector art, even edges}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/amazing_logo_v4123220_sketch_256.png}
+        \caption{Eingabe-Skizze}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/amazing_logo_v4123220_logo_basis_256.png}
+        \caption{Basismodell}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/amazing_logo_v4123220_logo_finetune_256.png}
+        \caption{Finetuned Modell}
+    \end{subfigure}
+    \caption{Fallbeispiel 2: Wortmarke mit Warnzeichen}
+    \label{fig:fallbeispiel_2}
+\end{figure}
+
+
+
+\subsubsection*{Fallbeispiel 3 (F3): Kombinierte Marke (Abstrakt + Wort)}
+
+\textbf{Prompt:}
+\textit{minimalistic logo, solid background; description: heating solutions heat pumps sustainability green energy radiator heating system connections, heating solutions heat pumps; tags: abstract, sharp, vector art, even edges}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/amazing_logo_v4207994_sketch_256.png}
+        \caption{Eingabe-Skizze}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/amazing_logo_v4207994_logo_basis_256.png}
+        \caption{Basismodell}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/amazing_logo_v4207994_logo_finetune_256.png}
+        \caption{Finetuned Modell}
+    \end{subfigure}
+    \caption{Fallbeispiel 3: Kombinierte Marke für Heizungs- und Energielösungen}
+    \label{fig:fallbeispiel_3}
+\end{figure}
+
+\subsubsection*{Fallbeispiel 4 (F4): Monogramm}
+
+\textbf{Prompt:}
+\textit{minimalistic logo, solid grey background; description: blue logo coloring with gradient; tags: sharp, even edges}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/logo_sketch3_sketch_256.png}
+        \caption{Eingabe-Skizze}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/logo_sketch3_logo_basis_256.png}
+        \caption{Basismodell}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/logo_sketch3_logo_finetune_256.png}
+        \caption{Finetuned Modell}
+    \end{subfigure}
+    \caption{Fallbeispiel 4: Monogramm basierend auf handgezeichneter Skizze}
+    \label{fig:fallbeispiel_4}
+\end{figure}
+
+\subsubsection*{Fallbeispiel 5  (F5): Bildmarke -- Abstrakte Marke}
+
+\textbf{Prompt:}
+\textit{minimalistic logo, solid background; description: lattice zelda triangle royal epic interlock power shape weave; tags: abstract, sharp, vector art, even edges}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/amazing_logo_v4193588_sketch_256.png}
+        \caption{Eingabe-Skizze}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/amazing_logo_v4193588_logo_basis_256.png}
+        \caption{Basismodell}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/fallbeispiele/amazing_logo_v4193588_logo_finetune_256.png}
+        \caption{Finetuned Modell}
+    \end{subfigure}
+    \caption{Fallbeispiel 5: Bildmarke -- Abstrakte Marke in Dreiecksform}
+    \label{fig:fallbeispiel_5}
+\end{figure}
+

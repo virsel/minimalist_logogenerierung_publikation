@@ -1,0 +1,39 @@
+\section{Theoretical Background and Related Work}\label{sec:grundlagen}
+
+\subsection{Minimalist Logo Design}\label{subsec:minimalistisches_logodesign}
+\subsubsection{Principles and Criteria}\label{subsubsec:prinzipien_und_kriterien}
+
+The design philosophy of minimalism is scientifically grounded in Ockham's Razor, which posits that among functionally equivalent alternatives, the simplest is preferable \parencite[172]{Lidwell2010}. In the context of logo design, minimalism aims to reduce a brand identity to its essential elements to achieve maximum \textbf{clarity}, recognizability, and functionality. A minimalist logo eliminates superfluous details and complex structures in favor of simple shapes, clear lines, and a limited color palette \parencite[52]{Wheeler2017}. This reduction enhances \textbf{memorability}, as unique, simple forms are easier to store in visual memory \parencite[2]{hjalmarsson2021impact}. Furthermore, it promotes \textbf{timelessness} by avoiding trends \parencite[40]{Wheeler2017} and ensures \textbf{versatility}, allowing the design to remain recognizable across all scales and media \parencite[44]{Wheeler2017}.
+
+\subsubsection{Topology of Minimalist Logos}\label{subsubsec:die_topologie_der_marken}
+Following \textcite[51]{Wheeler2017}, minimalist logos can be classified into three main categories:
+\begin{itemize}
+	\item \textbf{Typographic Logos:} Wordmarks (e.g., Google) or Monograms (e.g., IBM) that rely on type and negative space \parencite[68]{Lupton2010}.
+	\item \textbf{Pictorial Marks:} Symbols representing the brand. These include Emblems (text inside symbol), Pictorial Marks (literal representations like Apple), and Abstract Marks (geometric forms like Nike) \parencite{rashgraphic2024}.
+	\item \textbf{Combination Marks:} Integrating text and symbol (e.g., PayPal) to reinforce the brand message \parencite{rashgraphic2024}.
+\end{itemize}
+
+\subsection{Generative AI Models}\label{subsec:generative_ac_ki-modelle}
+Generative AI has evolved significantly from Generative Adversarial Networks (GANs) \parencite{GOODFELLOW2014}, which often suffered from training instability \parencite[2-3]{arjovsky2017wasserstein}. Denoising Diffusion Probabilistic Models (DDPMs) \parencite[3]{HO2020} introduced a more stable paradigm based on reversing a noise addition process.
+\textcite{ROMBACH2022} further advanced this with Latent Diffusion Models (LDMs), which operate in a compressed latent space. This approach, used in Stable Diffusion, drastically reduces computational requirements, enabling high-resolution generation on consumer hardware.
+
+\subsection{Conditioned Modeling}\label{subsec:konditionierte_modellierung}
+To control generation, models combine modalities, typically text and image \parencite{ZHANG2023}.
+
+\subsubsection{CLIP: Bridging Text and Image}\label{subsubsec:clip}
+\textcite{radford2021learning} introduced CLIP (Contrastive Language-Image Pre-training), which learns a joint embedding space for text and images. This allows diffusion models to be guided by text prompts, aligning the generated image with semantic descriptions \parencite{RAMESH2022}.
+
+\subsubsection{ControlNet: Structural Control}\label{subsubsec:controlnet}
+While CLIP provides semantic control, it lacks spatial precision. ControlNet \parencite{ZHANG2023} addresses this by adding a trainable copy of the model's encoder blocks. This allows the injection of structural conditions, such as edge maps or sketches, directly into the generation process without retraining the base model. This is crucial for logo design, where specific shapes must be preserved.
+
+\subsection{Parameter-Efficient Fine-Tuning (PEFT)}\label{subsec:finetuning}
+Fine-tuning large foundation models is resource-intensive. PEFT methods aim to adapt models by training only a small subset of parameters \parencite[2]{zhang2025parameter}.
+\textbf{Low-Rank Adaptation (LoRA)} \parencite[4]{HU2021} is a prominent PEFT technique. It hypothesizes that weight updates have a low intrinsic rank and approximates them using low-rank matrices ($ \Delta W = B \cdot A $). This significantly reduces the number of trainable parameters and memory usage, making fine-tuning feasible on consumer GPUs \parencite[4]{Zhihao_2025}.
+
+\subsection{Evaluation Metrics}\label{subsec:bewertungsmetriken}
+We employ three metrics to evaluate the generated logos:
+\begin{itemize}
+	\item \textbf{CLIP Score:} Measures the semantic alignment between the generated image and the text prompt \parencite{Hessel2021CLIPScoreAR}.
+	\item \textbf{SSIM (Structural Similarity Index):} Quantifies the structural fidelity of the generated logo to the input sketch, focusing on luminance, contrast, and structure \parencite{ssim_original}\parencite[3]{snell2017learning}.
+	\item \textbf{FID (Fréchet Inception Distance):} Assesses the realism and quality of generated images by measuring the distance between the feature distributions of real and generated images \parencite[6]{heusel2017gans}.
+\end{itemize}

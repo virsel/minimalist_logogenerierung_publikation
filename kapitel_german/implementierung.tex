@@ -1,0 +1,107 @@
+\section{Implementierung}\label{sec:implementierung}
+
+\subsection{Trainings- und Evaluierungsumgebung}\label{sec:impl_train_env}
+
+Eine stabile und klar definierte Umgebung ist entscheidend für den Erfolg und die Reproduzierbarkeit von Machine-Learning-Projekten. In diesem Abschnitt wird die festgelegte Umgebung beschrieben, die für das Training und die Evaluierung der Modelle im Rahmen dieser Arbeit verwendet wird. Sie umfasst die spezifische Hardware und die exakten Software-Versionen, die für alle Experimente konsistent eingesetzt wurden, um vergleichbare und reproduzierbare Ergebnisse zu gewährleisten.
+
+\subsubsection*{Hardware}
+Das Training von Diffusionsmodellen ist rechenintensiv und erfordert spezialisierte Hardware, um die großen Datenmengen und komplexen Modellarchitekturen effizient zu verarbeiten. Die für diese Arbeit genutzte Hardware-Konfiguration ist im Folgenden aufgeführt:
+\begin{itemize}
+  \item \textbf{\acs{GPU}:} Eine NVIDIA RTX 5080 mit 16 GB \acs{VRAM}. Diese Grafikkarte ist für das Training mit gemischter Präzision (\texttt{FP16}) und einer angemessenen Stapelverarbeitungsgröße (Batch-Größe) essenziell.
+  \item \textbf{\acs{CPU}:} Eine moderne Multi-Core-\acs{CPU} zur Unterstützung der Datenvorverarbeitung und zur Entlastung der \acs{GPU} bei nichtparallelen Aufgaben.
+  \item \textbf{\acs{RAM}:} 32 GB Arbeitsspeicher, um Engpässe beim Laden und Vorverarbeiten der Bilddaten zu vermeiden.
+  \item \textbf{Speicher:} Ein schnelles \acs{SSD}-Laufwerk für das Dataset und die Modell-Checkpoints, um I/O-Flaschenhälse zu minimieren und einen schnellen Zugriff auf die Daten zu gewährleisten.
+\end{itemize}
+
+\subsubsection*{Software und Containerisierung}
+Die Implementierung erfolgte in der Programmiersprache Python. Die Softwareumgebung wurde durch eine \texttt{requirements.txt}-Datei standardisiert, um die exakten Versionen aller Abhängigkeiten festzuhalten. Als Betriebssystem für Entwicklung und Training diente Windows 11. Die wichtigsten Software-Bibliotheken sind nachfolgend beschrieben:
+\begin{description}
+  \item[Deep Learning Framework] Die Bibliotheken \texttt{torch} \parencite{pytorch} und \texttt{torchvision} \parencite{torchvision} bilden die Grundlage für alle Operationen des neuronalen Netzes und die Datenverarbeitung.
+  \item[Modell- und Pipeline-Verwaltung] Das Paket \texttt{diffusers} \parencite{huggingface_diffusers} stellt die zentralen Pipeline-Komponenten für das Training von Diffusionsmodellen bereit, einschließlich der für diese Arbeit relevanten ControlNet-Architektur.
+  \item[Text- und Token-Verarbeitung] Zur Umwandlung der Text-Prompts in ein für das Modell verständliches Format (Tokenization) wird die \texttt{transformers}-Bibliothek \parencite{huggingface_transformers} eingesetzt.
+  \item[Parameter-effizientes Fine-Tuning] Die \acs{PEFT}-Bibliothek (\texttt{peft}) \parencite{huggingface_peft} von Hugging Face ist entscheidend für die Implementierung von \acs{LoRA}. Sie ermöglicht es, die \acs{LoRA}-Adapter in das Modell zu injizieren und ausschließlich diese kleinen Adapter anstelle des gesamten Modells zu trainieren.
+  \item[Experiment-Tracking und Containerisierung] Für das Tracking von Experimenten und die Verwaltung von Modellen wird MLflow \parencite{mlflow} eingesetzt. Der zugehörige Server wurde mittels Docker \parencite{docker} containerisiert, um eine portable und isolierte Umgebung zu schaffen.
+  \item[Bibliotheken für Qualitätsmetriken] Für die Evaluierung der generierten Bilder wurden spezialisierte Bibliotheken zur Berechnung von Qualitätsmetriken eingesetzt: \texttt{clip} \parencite{openai_clip} zur Ermittlung des CLIP-Scores, \texttt{scikit-image} \parencite{scikit-image} für den Structural Similarity Index (\acs{SSIM}) und \texttt{clean-fid} \parencite{clean-fid} zur Berechnung der Fréchet Inception Distance (\acs{FID}).
+\end{description}
+
+
+
+\subsection{Pipeline-Design und Komponenten}
+Die Implementierung des Modelltrainings und der anschließenden Evaluierung folgt einem modularen Pipeline-Ansatz, der eine klare Trennung zwischen den beiden Phasen gewährleistet. Diese Struktur fördert nicht nur die Übersichtlichkeit des Codes, sondern auch die Reproduzierbarkeit der Experimente, da jede Komponente unabhängig getestet und validiert werden kann. Um zufallsbedingte Schwankungen bei stochastischen Prozessen wie der Gewichtungsinitialisierung oder der Datenmischung zu eliminieren, wird zudem durchgängig ein fester Seed von 42 verwendet. Die Trainingspipeline ist darauf ausgelegt, das Basismodell effizient zu finetunen, während die Evaluierungspipeline die Leistung des trainierten Modells anhand vordefinierter Metriken quantifiziert.
+
+\subsubsection*{Die Trainingspipeline}
+Die Trainingspipeline orchestriert das Feintuning des Stable-Diffusion-Modells unter Verwendung von \ac{LoRA} und ControlNet. Der Prozess ist in mehrere logische Schritte unterteilt, um eine hohe Effizienz und Stabilität zu gewährleisten.
+
+Zunächst werden die erforderlichen Modelle geladen: das Basis-Diffusionsmodell (Stable Diffusion v1.5), das vortrainierte Lineart-ControlNet-Modell und der zugehörige Tokenizer. Um den Speicherbedarf zu reduzieren, werden die Modelle direkt im Datentyp \texttt{bfloat16} geladen. Anschließend werden mithilfe der \acs{PEFT}-Bibliothek \ac{LoRA}-Adapter in die vorgesehenen Layer des \acs{UNet} injiziert. Für das Training werden ausschließlich die Gewichte dieser Adapter aktiviert, während das Basismodell eingefroren bleibt, was den rechenintensiven Prozess erheblich beschleunigt.
+
+Der Kern der Pipeline ist die Trainingsschleife, die die aufbereiteten Daten verarbeitet. Für jeden Trainingsschritt werden die folgenden Operationen durchgeführt:
+\begin{enumerate}
+  \item \textbf{Datenverarbeitung:} Ein Batch von Bildern und zugehörigen Text-Prompts wird aus dem \texttt{DataLoader} geladen.
+  \item \textbf{Latent-Transformation und Noising:} Die Bilder werden mithilfe des \ac{VAE}-Encoders in den latenten Raum überführt und anschließend, dem Forward-Process eines Diffusionsmodells entsprechend, mit Rauschen versehen.
+  \item \textbf{Konditionierung:} Die Text-Prompts werden durch den Tokenizer in Embeddings umgewandelt, die dem Modell als semantische Führung dienen.
+  \item \textbf{Rauschvorhersage:} Das verrauschte latente Bild, die Text-Embeddings und das Kontrollbild (Lineart-Map) werden dem \acs{UNet} und dem ControlNet übergeben. Das Modell führt einen Forward-Pass durch, um das hinzugefügte Rauschen vorherzusagen.
+  \item \textbf{Verlustberechnung und Optimierung:} Der mittlere quadratische Fehler (\ac{MSE}) zwischen dem vom Modell vorhergesagten und dem tatsächlichen Rauschen wird als Verlustfunktion berechnet. Anschließend erfolgt ein Backward-Pass, bei dem die Gradienten ausschließlich für die \ac{LoRA}-Adapter berechnet und deren Gewichte mittels des AdamW-Optimizers \parencite{pytorch_adamw} aktualisiert werden.
+\end{enumerate}
+
+In regelmäßigen Abständen wird der Trainingsprozess unterbrochen, um eine Validierung auf einem separaten Datensatz durchzuführen. Dies dient der Überwachung des Modellfortschritts und der frühzeitigen Erkennung von Overfitting. Jedes Experiment wird für eine feste Dauer von 14 Epochen trainiert, was bei einer Batch-Größe von 8 und 1448 Trainingsbildern exakt 2.534 Trainingsschritten (181 pro Epoche) entspricht. Diese Dauer orientiert sich an dem von \textcite{cloneofsimo_lora} empfohlenen Richtwert von 2.500 Schritten (mit Batch-Größe 1) für ein qualitativ hochwertiges Training und ist ebenfalls konsistent mit den Erkenntnissen von \textcite{ruiz2023dreamboothfinetuningtexttoimage}, die bereits mit 1.000 Iterationen gute Ergebnisse erzielen konnten. Für die finale Evaluierung wird der Checkpoint nach Abschluss aller 2.534 Schritte verwendet. Alle relevanten Hyperparameter und Metriken werden zudem mittels MLflow protokolliert.
+
+\subsubsection*{Die Evaluierungspipeline}
+Nach Abschluss jedes Trainingslaufs wird die Evaluierungspipeline eingesetzt, um die Leistung der jeweiligen Hyperparameter-Konfiguration zu quantifizieren. Dieser Prozess wird auf dem vollständigen Validierungsdatensatz durchgeführt. Die Pipeline fusioniert die trainierten \ac{LoRA}-Gewichte mit dem ursprünglichen Basismodell und generiert für jeden Prompt des Validierungssets ein Bild.
+
+Der Prozess beginnt mit dem Laden der Prompts und der zugehörigen Kontrollbilder aus dem Validierungsset. Anschließend wird die Inferenz-Pipeline initialisiert, indem die trainierten \ac{LoRA}-Gewichte in die entsprechenden Layer des \acs{UNet} geladen werden. Für jeden Prompt wird ein neues Bild generiert, das sowohl durch den Text als auch durch die strukturellen Vorgaben des Kontrollbildes konditioniert ist.
+
+Die Qualität der generierten Bilder wird anhand der in Kapitel \ref{subsec:bewertungsmetriken_und_qualitaetskriterien} definierten quantitativen Metriken bewertet:
+\begin{itemize}
+  \item \textbf{\acs{CLIP}-Score:} Misst die semantische Übereinstimmung zwischen dem generierten Bild und dem ursprünglichen Text-Prompt.
+  \item \textbf{\acs{SSIM}:} Vergleicht die strukturelle Ähnlichkeit zwischen dem generierten Bild und der ursprünglichen Kontroll-Lineart-Map. Um die Messung zu normalisieren und ausschließlich die Strukturtreue zu bewerten, wird das generierte Bild ebenfalls in eine Lineart-Map umgewandelt. Der \ac{SSIM}-Wert wird anschließend zwischen dieser neu erzeugten Lineart-Map und der ursprünglichen Kontroll-Lineart-Map berechnet, um zu quantifizieren, wie präzise das Modell die strukturellen Vorgaben des ControlNet umgesetzt hat.
+  \item \textbf{\acs{FID}:} Bewertet die Realitätstreue und Vielfalt der generierten Bilder, indem die Verteilung der generierten Bilder mit der Verteilung der echten Bilder aus dem Evaluierungsdatensatz verglichen wird.
+\end{itemize}
+Die berechneten Metriken werden zusammengefasst und ebenfalls an MLflow gesendet, um einen systematischen Vergleich der Leistung verschiedener Trainingsläufe zu ermöglichen. Das Modell, das auf dem Validierungsdatensatz die besten Ergebnisse erzielt, wird als finales Modell ausgewählt und anschließend ein einziges Mal auf dem separaten Testdatensatz evaluiert, um seine Generalisierungsfähigkeit zu überprüfen.
+
+
+
+
+\subsection{Reproduzierbarkeit und Versionierung}
+Die Reproduzierbarkeit von Ergebnissen ist ein zentraler Grundpfeiler wissenschaftlicher Forschung. Aufbauend auf den zuvor definierten Pipelines und der Systemumgebung wird in diesem Abschnitt die Methodik zur Sicherstellung der Nachvollziehbarkeit und Wiederholbarkeit aller Experimente erläutert. Der hier verfolgte Ansatz basiert auf drei Säulen: der Versionierung des Quellcodes, dem systematischen Tracking von Experimenten und einem strukturierten Management der zugrunde liegenden Daten.
+
+\subsubsection*{Code- und Umgebungsversionierung}
+Die Grundlage für eine nachvollziehbare Entwicklung bildet die konsequente Versionierung des gesamten Quellcodes, der Konfigurationsdateien sowie der Dokumentation mittels des verteilten Versionskontrollsystems Git \parencite{GitHub}. Um das Repository fokussiert zu halten, werden generierte Artefakte und große Datensätze von der Versionierung ausgeschlossen.
+
+Eng damit verknüpft ist die Versionierung der Softwareumgebung. Wie in der Beschreibung der Softwareumgebung erwähnt, wird eine \texttt{requirements.txt}-Datei verwendet, um die exakten Versionen aller Python-Abhängigkeiten festzuhalten. Diese Datei ist ebenfalls Teil des Git-Repositorys, wodurch sichergestellt wird, dass jede Code-Version mit einer exakt definierten und wiederherstellbaren Softwareumgebung verknüpft ist.
+
+\subsubsection*{Daten-Management}
+Eine weitere Säule der Reproduzierbarkeit ist ein diszipliniertes Management der verwendeten Datensätze. Obwohl in diesem Projekt kein spezialisiertes Werkzeug zur Daten-Versionierung wie \ac{DVC} \parencite{dvc} zum Einsatz kommt, wird die Nachvollziehbarkeit durch einen strukturierten Ansatz gewährleistet.
+
+Die zugrundeliegenden Datensätze sind in einer logischen Verzeichnisstruktur organisiert und werden als unveränderlich behandelt. Metadaten-Dateien definieren präzise die Zugehörigkeit jeder einzelnen Dateninstanz zu den Trainings-, Validierungs- und Test-Mengen (siehe Kapitel \ref{sec:data_split}). Die in den Pipelines verwendeten Skripte referenzieren diese definierten Datensätze, wodurch sichergestellt wird, dass alle Experimente auf einer identischen und konsistenten Datengrundlage aufbauen. Für Projekte mit sich häufig ändernden oder sehr großen Datensätzen wäre die zusätzliche Integration eines dedizierten Daten-Versionierungstools der nächste logische Schritt zur weiteren Formalisierung dieses Prozesses.
+
+\subsubsection*{Experiment-Tracking mit MLflow}
+Während die Code-Versionierung den statischen Zustand des Projekts sichert, ist für die Reproduzierbarkeit die Erfassung der dynamischen Aspekte eines jeden Experiments ebenso entscheidend. Hierfür wird die Open-Source-Plattform MLflow \parencite{mlflow} verwendet, die nahtlos in die Trainings- und Evaluierungspipeline integriert ist, um alle relevanten Informationen systematisch zu protokollieren.
+
+Für jeden durchgeführten Lauf – sei es ein Training oder eine Evaluierung – werden die folgenden zentralen Informationen erfasst:
+\begin{description}
+  \item[Parameter] Sämtliche Hyperparameter, die ein Experiment definieren, wie Lernrate, Batch-Größe oder \ac{LoRA}-spezifische Konfigurationen.
+  \item[Metriken] Alle quantitativen Leistungsindikatoren, einschließlich des zeitlichen Verlaufs von Trainings- und Validierungsverlust sowie der finalen Evaluierungsmetriken.
+  \item[Artefakte] Zugehörige Dateien wie die trainierten Modellgewichte, Konfigurationsdateien und generierte Beispielbilder.
+  \item[Quellcode-Referenz] Ein Verweis auf den exakten Git-Commit, mit dem der Lauf ausgeführt wurde.
+\end{description}
+Diese Verknüpfung von Code-Version, Parametern, Metriken und Artefakten ist der entscheidende Faktor, um jedes Ergebnis exakt zu reproduzieren. Die umfassende Protokollierung in der MLflow-Benutzeroberfläche ermöglicht es, jedes dokumentierte Ergebnis eindeutig auf eine spezifische Konfiguration zurückzuführen.
+
+
+
+\subsection{Konzeption einer Inferenzumgebung}
+Während die vorangegangenen Abschnitte die Trainings- und Evaluierungsprozesse detailliert beschrieben haben, fokussiert sich dieser Abschnitt auf die Überführung der trainierten Modelle in eine produktive Anwendung. Da im Rahmen dieser Arbeit keine dedizierte Inferenzumgebung implementiert wurde, wird hier, basierend auf etablierten Industriestandards und Forschungserkenntnissen, der konzeptionelle Aufbau einer effizienten und skalierbaren Inferenzarchitektur dargelegt.
+
+\subsubsection*{Hardware-Anforderungen und Modelloptimierung}
+Die Anforderungen an die Hardware für die Inferenz unterscheiden sich von denen des Trainings. Während das Training auf den Durchsatz großer Datenmengen ausgelegt ist, liegt der Fokus bei der Inferenz auf einer minimalen Latenz bei der Verarbeitung einzelner Anfragen. Eine \acs{GPU} mit 8-12 GB \acs{VRAM} ist für die hier verwendeten Modelle in der Regel ausreichend. Entscheidend ist eine hohe Inferenzleistung, die maßgeblich durch Operationen mit geringerer Präzision erzielt wird. Die zentrale Technik hierfür ist die ``Quantisierung'', bei der die Modellgewichte beispielsweise von 32-Bit-Gleitkommazahlen (FP32) auf 8-Bit-Integer (INT8) reduziert werden. Dieser Schritt verringert nicht nur den Speicherbedarf erheblich, sondern beschleunigt auch die Inferenzgeschwindigkeit, da, wie \textcite{Ma_2025} aufzeigen, moderne Hardware über spezialisierte Einheiten wie Tensor Cores verfügt, die Operationen mit geringerer Präzision effizient verarbeiten.
+
+Der größte Hebel zur Effizienzsteigerung liegt jedoch in der Optimierung des Modells selbst. Für maximale Leistung sollte das trainierte PyTorch-Modell in ein spezialisiertes Inferenzformat konvertiert werden. Das ``Open Neural Network Exchange'' (\acs{ONNX}) Format dient hierbei als universeller Standard, der von vielen Plattformen unterstützt wird \parencite{onnx_ai}. Für den Einsatz auf NVIDIA-Hardware bietet ``TensorRT'' weiterführende Optimierungen wie Layer-Fusion, um die Hardware-Ressourcen optimal auszunutzen \parencite{NVIDIA_TensorRT_BestPractices}.
+
+\subsubsection*{Deployment-Strategien}
+Für die Bereitstellung eines Modells als zuverlässiger und skalierbarer Dienst empfiehlt sich eine moderne, containerbasierte Deployment-Strategie.
+\begin{itemize}
+  \item \textbf{Containerisierung:} Der erste Schritt ist die Verpackung der gesamten Inferenzanwendung – einschließlich des optimierten Modells und aller Abhängigkeiten – in ein Docker-Image. Dies schafft eine isolierte, reproduzierbare und portable Umgebung, die die Grundlage für skalierbare Deployments bildet.
+  \item \textbf{Spezialisierte Inferenz-Server:} Anstatt eine eigene Server-Anwendung zu implementieren, ist der Einsatz von spezialisierten Hosting-Lösungen wie dem ``Triton Inference Server'' von NVIDIA zu empfehlen \parencite{NVIDIA_Triton_UserGuide}. Diese bieten essenzielle Features wie dynamisches Batching zur optimalen \acs{GPU}-Auslastung, Health-Checks, Monitoring und die Verwaltung multipler Modellversionen.
+  \item \textbf{Serverless-Plattformen:} Für Anwendungen mit stark variabler oder sporadischer Last stellen Serverless-Dienste wie ``Google Cloud Run'' eine kosteneffiziente Alternative dar \parencite{GoogleCloudRun}. Diese Plattformen skalieren die Rechenressourcen automatisch von null auf die benötigte Kapazität, wodurch die Kosten an die tatsächliche Nutzung gekoppelt werden und die Notwendigkeit entfällt, permanent laufende Server zu verwalten.
+\end{itemize}
+Die Wahl der geeigneten Strategie hängt von den spezifischen Anforderungen an Latenz, Skalierbarkeit und Kosten des jeweiligen Anwendungsfalls ab.
+

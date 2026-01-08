@@ -1,0 +1,67 @@
+\section{Einleitung}\label{sec:einleitung}
+
+Die Gestaltung von Logos ist ein zentraler Bestandteil des Brandings und der visuellen Kommunikation. Wie \textcite[2]{hjalmarsson2021impact} beschreiben, gewinnen besonders minimalistische Logos in der digitalen Ökonomie an Bedeutung, da sie zeitlos, skalierbar und in unterschiedlichen Medien konsistent einsetzbar sind. Reduktion auf das Wesentliche, klare Linien und einfache Formen ermöglichen eine hohe Wiedererkennbarkeit und Robustheit über Anwendungsfälle hinweg. So verweist auch \textcite[42]{hjalmarsson2021impact} darauf, dass Einfachheit nicht nur ästhetisch ansprechend ist, sondern die Wiedererkennung stärkt und die Nutzbarkeit über Kanäle und Größen hinweg verbessert. Bekannte Marken demonstrieren diese Leitidee in ikonischen Zeichen, die oft auf wenige geometrische Grundelemente kondensiert sind. Ein Beispiel hierfür ist das Unternehmen \textit{McDonald's}, dessen Logo aus dem charakteristischen goldenen Bogen besteht, der weltweit sofort erkennbar ist \parencite{99designsMinimalismusLogoDesign}.
+
+
+
+\subsection{Motivation und Problemstellung}
+
+Der Entwurf hochwertiger Logos erfordert ein hohes Maß an Kreativität, Verständnis für Designprinzipien und präzise Umsetzung \parencite[1]{bertao2023blind}. \textcite[1]{gualortí2025future} nennen als aktuelle Herausforderungen im Designprozess den erheblichen Zeitaufwand für Iterationen, die Notwendigkeit, unterschiedliche Designrichtungen schnell zu explorieren, und die Sicherstellung der Konsistenz im minimalistischen Stil. Diese Problematik gewinnt angesichts der steigenden Nachfrage nach personalisierten und schnell verfügbaren Designlösungen in der digitalen Wirtschaft zunehmend an Bedeutung \parencite{verifiedmarketreports_grafikdesign2025}. Unternehmen, Start-ups und Projekte benötigen schnell konsistente visuelle Identitäten. Klassische Designprozesse stoßen hier aufgrund begrenzter Ressourcen oder kurzer Time-to-Market-Anforderungen an Grenzen. Minimalistische Logos sind dabei besonders geeignet, weil sie in digitalen Ökosystemen gut skalieren, robust reproduzierbar sind und in restriktiven Darstellungsumgebungen (kleine Displays, Favicon, Embeddings) zuverlässig funktionieren. Gleichzeitig ist das systematische Ableiten einer minimalistischen, markengerechten Formensprache schwierig. Mehrere Entwurfsrunden, divergierende Stilexplorationen und die Sicherung formaler Konsistenz benötigen viel Zeit und Expertise.
+
+Mit dem Aufkommen generativer \ac{KI} \parencite{HO2020}\parencite{ROMBACH2022} ergeben sich neue Möglichkeiten, Designprozesse zu unterstützen und zu automatisieren. Eine Studie aus dem Jahr 2023 von \textcite[1]{bertao2023blind} konnte zeigen, dass klassische KI-Modelle Schwächen beim Einhalten von Design-Standards haben und es wird empfohlen, diese mittels hybrider Lösungen zu adressieren.
+Insbesondere multimodale Modelle \parencite[2]{ZHANG2023}\parencite[8]{RAMESH2022}\parencite[5]{NICHOL2021}, die sowohl Bildeingaben (z. B. Skizzen) als auch Texteingaben verarbeiten können, bieten ein enormes Potenzial für die konditionierte Logo-Generierung. Sie adressieren die bekannte Schwäche rein textkonditionierter Modelle, geometrische und kompositorische Anforderungen präzise zu treffen \parencite[2]{ZHANG2023}. Diffusionsmodelle \parencite{ROMBACH2022} und darauf aufbauende Techniken wie ControlNet \parencite[2]{ZHANG2023} erlauben eine präzisere Steuerung des Generierungsprozesses als reine Text-zu-Bild-Verfahren, indem zusätzlich zu einem Prompt eine skizzierte Struktur als konditionierende Eingabe dient. Damit rückt die konditionierte Generierung minimalistischer Logos in den Fokus: Eine grobe Komposition oder Kontur kann als Skizze vorgegeben und durch textuelle Stil-, Form- und Inhaltsanweisungen verfeinert werden. Dieser Ansatz verspricht eine bessere Übereinstimmung zwischen Intention und Ergebnis sowie effizientere Iterationen im Designprozess. Generative \ac{KI} kann somit als Ideenverstärker und Explorationshilfe dienen, indem sie schnelle, steuerbare Variationen liefert. In einer zunehmend digitalisierten Wirtschaft, in der Start-ups und kleine Unternehmen schnell professionelle visuelle Identitäten benötigen, könnte diese Technologie demokratisierenden Einfluss auf den Zugang zu qualitativ hochwertigem Design haben.
+
+Vor diesem Hintergrund adressiert die vorliegende Arbeit die Umsetzbarkeit und Wirksamkeit eines multimodalen, feingetunten \ac{KI}-Prototyps zur konditionierten Generierung minimalistischer Logos unter Verwendung von handelsüblicher Hardware.
+
+
+
+
+
+
+\subsection{Zielsetzung und Forschungsfragen}
+
+Im Zentrum des Forschungsvorhabens stehen die Konzeption, Auswahl und Evaluation eines Modellprototyps, der auf Basis einer Benutzerskizze und eines Textprompts ein qualitativ hochwertiges, minimalistisches Logo erzeugen soll. Im Sinne der Nachhaltigkeit und praktischen Relevanz wird eine hohe Effizienz des Modells als Bedingung definiert, indem das Modellieren auf handelsüblicher Hardware realisiert wird.
+
+Daraus leitet sich die folgende Forschungsfrage ab:
+\begin{itemize}
+	\item \textbf{Forschungsfrage:} \textit{Wie kann ein \ac{KI}-Modell für konditionierte Bild-Generierung ressourceneffizient auf das Erstellen von minimalistischen Logos optimiert werden und welche Auswirkungen haben verschiedene Hyperparameter-Konfigurationen auf die Ergebnisqualität?}
+\end{itemize}
+
+Zur Beantwortung dieser Forschungsfrage werden die folgenden zentralen Hypothesen aufgestellt und im Rahmen dieser Arbeit überprüft:
+\begin{itemize}
+	\item \textbf{Hypothese 1 (H1):} Die zusätzliche Konditionierung des Modells durch eine Skizze führt zu einer signifikant höheren strukturellen Übereinstimmung mit der gestalterischen Absicht als bei rein text-konditionierten Ergebnissen.
+	\item \textbf{Hypothese 2 (H2):} Die Optimierung eines Bildgenerators durch Feintuning auf einem spezialisierten Logo-Datensatz verbessert die Fähigkeit zur Generierung stilistisch kohärenter Logos signifikant, was sich in etablierten Bildqualitätsmetriken niederschlägt.
+	\item \textbf{Hypothese 3 (H3):} Spezifische Hyperparameter-Konfigurationen haben einen direkten und messbaren Einfluss auf die Ergebnisqualität, wobei eine optimale Konfiguration zu einer besseren visuellen Qualität, strukturellen Übereinstimmung und Text-Bild-Kohärenz führt.
+	\item \textbf{Hypothese 4 (H4):} Ein ressourceneffizient optimierter Prototyp erzeugt auf handelsüblicher Hardware Ergebnisse, die in einer qualitativen Bewertung eine höhere Güte in der Umsetzung der gestalterischen Absicht und eine größere kommerzielle Relevanz aufweisen als jene des unspezialisierten Basismodells.
+\end{itemize}
+
+\subparagraph*{Wissenschaftlicher Beitrag} Die Arbeit leistet einen Beitrag an der Schnittstelle von Designwissenschaft und maschinellem Lernen, indem sie die Feinabstimmung eines frei verfügbaren, multimodalen \ac{KI}-Modells auf die spezifische Domäne der Logo-Generierung systematisch untersucht. Ein wesentlicher Aspekt ist dabei die Analyse, wie sich die Konfiguration von Hyperparametern auf die Ergebnisqualität auswirkt, validiert durch objektive Metriken und unter der Prämisse der Ressourceneffizienz auf handelsüblicher Hardware.
+
+\subparagraph*{Abgrenzung} Der Schwerpunkt liegt auf der Modell- und Pipelinekonzeption sowie der quantitativen Bewertung der generierten Logos. Die Experimente werden bewusst auf handelsüblicher Hardware durchgeführt, um die praktische Anwendbarkeit für eine breite Zielgruppe zu untersuchen. Eine umfangreiche grafische Benutzeroberfläche, produktionsreifes Deployment oder urheber- und markenrechtliche Detailfragen sind nicht Gegenstand der Arbeit; rechtliche Aspekte werden lediglich rahmend berücksichtigt.
+
+\subsection{Vorgehensweise und Aufbau der Arbeit}
+Die wissenschaftliche Vorgehensweise dieser Arbeit kombiniert mehrere übergreifende Methodiken, darunter Recherche, Entwurf, Konstruktion, Programmierung und Experiment \parencite[9]{FOMLeitfaden2024}. Der Schwerpunkt liegt jedoch auf dem Experiment als zentralem Verfahren zur Erkenntnisgewinnung. Hierbei wird, analog zu einem Laborexperiment, die Wirkung von gezielten Veränderungen (z. B. von Hyperparametern) auf ein System (das KI-Modell) unter kontrollierten Bedingungen systematisch untersucht. Die Planung, Durchführung und Interpretation dieser Experimente bilden den Kern der Arbeit.
+
+Um die Forschungsziele zu erreichen, wird zunächst eine systematische Literaturrecherche durchgeführt, die als Grundlage für das anschließende Forschungsdesign dient.
+
+\subparagraph*{Systematische Literaturrecherche}
+Für die systematische Identifikation relevanter Literatur wird eine mehrstufige Recherchestrategie angewendet:
+
+\begin{itemize}
+	\item \textbf{Primäre Quellen:} ArXiv.org für aktuelle Forschungsarbeiten im Bereich maschinellen Lernens und generativer Modelle \parencite{arxiv2025}, IEEE Xplore und ACM Digital Library für peer-reviewed Publikationen zu Computer Vision und Human-Computer-Interaction \parencite{ieeexplore2025}\parencite{acm2025}.
+	\item \textbf{Spezielle Datenbanken:} Google Scholar für interdisziplinäre Arbeiten an der Schnittstelle von Design und Technologie \parencite{googlescholar2025}, ResearchGate für Zugang zu aktuellen Preprints und Konferenzpapieren \parencite{researchgate2025}.
+	\item \textbf{Suchstrategie:} Die Recherche basiert auf der Verwendung von Schlüsselbegriffen wie ``generative AI'', ``logo design'', ``multimodal models'', ``ControlNet'', ``diffusion models'' und ``design automation''. Zur Effizienzsteigerung wurde generative KI zur Formulierung komplexer Suchanfragen und zur initialen Identifikation von Schlüsselpublikationen eingesetzt (siehe \ref{app:lit_search}). Ergänzend erfolgte eine systematische Durchsicht der Referenzen relevanter Arbeiten.
+	\item \textbf{Aktualitätskriterium:} Bevorzugung von Publikationen der letzten 3-5 Jahre aufgrund der schnellen Entwicklung im Bereich der generativen \ac{KI}, ergänzt durch grundlegende ältere Arbeiten zu Designprinzipien.
+\end{itemize}
+
+
+\subparagraph*{Aufbau der Arbeit}
+Der Aufbau der Masterarbeit orientiert sich an der \acs{TDSP}-Methodik (\acl{TDSP}) von Microsoft \parencite[5]{tdsp_article}, die einen strukturierten Ansatz für datengetriebene Projekte bietet. Diese Methodik eignet sich besonders für den Anwendungsfall der Logogenerierung, da sie ein Anstreben von hoher Nutzerzufriedenheit explizit forciert. Die \acs{TDSP}-Phasenstruktur beginnt mit der Vertiefung von Geschäftsverständnis mit anschließender Datenbeschaffung und -aufbereitung. Danach erfolgen die Modellierung, Bereitstellung und Kundenabnahme, wobei empfohlene Feedbackschleifen jederzeit eine Phasenoptimierung nahelegen. Abgeleitet von dieser Struktur gliedert sich die Arbeit in die folgenden Kapitel:
+\begin{itemize}
+	\item \textbf{Grundlagen (Kapitel~\ref{sec:grundlagen}):} Zunächst werden die theoretischen Grundlagen des minimalistischen Logodesigns und generativer KI-Modelle erläutert, um eine Basis für die nachfolgenden Kapitel zu schaffen.
+	\item \textbf{Methodik (Kapitel~\ref{sec:methodik}):} In diesem Kapitel werden das Forschungsdesign, die Auswahl der Systemarchitektur (Basis- und Kontrollmodell) und die mehrstufige Aufbereitung der Datenbasis detailliert beschrieben.
+	\item \textbf{Implementierung (Kapitel~\ref{sec:implementierung}):} Dieses Kapitel erläutert die technische Umsetzung des experimentellen Setups. Es beschreibt die Systemumgebung, das Design der Trainings- und Evaluierungspipelines sowie die Methodik zur Sicherstellung der Reproduzierbarkeit mittels Versionskontrolle und Experiment-Tracking.
+	\item \textbf{Ergebnisse (Kapitel~\ref{sec:ergebnisse}):} In diesem Kapitel werden die Ergebnisse der Evaluation präsentiert. Die Bewertung der generierten Logos erfolgt sowohl quantitativ anhand etablierter Metriken, die Aspekte wie Text-Bild-Kohärenz (\ac{CLIP}-Score), Bildqualität (\ac{FID}) und strukturelle Ähnlichkeit (\ac{SSIM}) messen, als auch qualitativ im Rahmen einer Nutzerbefragung zur Beurteilung der Umsetzung der gestalterischen Absicht und kommerziellen Relevanz.
+	\item \textbf{Diskussion und Fazit (Kapitel~\ref{sec:diskussion} und \ref{sec:fazit}):} Abschließend werden die Ergebnisse diskutiert, Implikationen und Limitationen der Arbeit beleuchtet und ein Fazit mit Ausblick auf zukünftige Forschung gegeben.
+\end{itemize}
+

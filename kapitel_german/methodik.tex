@@ -1,0 +1,305 @@
+\newpage
+\section{Methodik}\label{sec:methodik}
+\subsection{Forschungsdesign und Hypothesen}
+Das Forschungsdesign dieser Arbeit ist als quantitativ-experimenteller Ansatz konzipiert, der darauf abzielt, die Leistungsfähigkeit von feingetunten Diffusionsmodellen bei der Generierung von kommerziell nutzbaren Logos zu bewerten. Der Kern des Designs besteht darin, ein Basis-Diffusionsmodell durch spezialisierte Trainingsmethoden, wie parametereffizientes Feintuning und Techniken zur strukturellen Steuerung, so anzupassen, dass es in der Lage ist, qualitativ hochwertige und kontextuell passende Logos basierend auf textuellen und strukturellen Vorgaben zu erzeugen.
+
+Das Experiment gliedert sich in drei Hauptphasen:
+\begin{enumerate}
+    \item \textbf{Datenaufbereitung:} Ein großer, öffentlich verfügbarer Datensatz von Logos wird sorgfältig bereinigt, kuratiert und für das Training vorbereitet. Dieser Schritt umfasst die Normalisierung von Metadaten, die Auswahl einer repräsentativen Teilmenge und die Generierung von zusätzlichen Kontrollsignalen (Skizzen).
+    \item \textbf{Training und Hyperparameter-Optimierung:} Eine systematische Hyperparameter-Optimierung für eine festgelegte Strategie wird durchgeführt. Ziel ist es, die optimale Konfiguration für das Training des Basismodells zu ermitteln, um die bestmögliche Leistung bei der Logo-Generierung zu erzielen.
+    \item \textbf{Evaluation:} Die generierten Logos der verschiedenen Modelle werden anhand eines multimodalen Evaluationsrahmens bewertet. Dieser Rahmen kombiniert quantitative Metriken (\ac{SSIM}, \ac{FID} und \ac{CLIP}-Score, Kapitel \ref{subsec:bewertungsmetriken_und_qualitaetskriterien}) mit qualitativen Bewertungen durch menschliche Probanden, um sowohl die technische Präzision als auch die ästhetische und semantische Qualität zu messen.
+\end{enumerate}
+
+Aus diesem Forschungsdesign werden die in Kapitel \ref{sec:einleitung} bereits vorgestellten zentralen Hypothesen abgeleitet, die im Rahmen dieser Arbeit überprüft werden sollen.
+
+Die Überprüfung dieser Hypothesen soll Aufschluss darüber geben, inwieweit moderne generative KI-Methoden bereits in der Lage sind, kreative und anspruchsvolle Aufgaben im Bereich des Grafikdesigns nicht nur zu unterstützen, sondern qualitativ hochwertige Ergebnisse zu liefern, die professionellen Ansprüchen genügen.
+
+\subsection{Datenbasis}
+Eine qualitativ hochwertige und gut aufbereitete Datenbasis ist die grundlegende Voraussetzung für das erfolgreiche Training leistungsfähiger generativer Modelle. In dieser Arbeit wird ein sorgfältig kuratierter Datensatz verwendet, um ein Diffusionsmodell auf die spezifische Domäne der Logo-Generierung zu spezialisieren.
+
+Als Grundlage für das Modelltraining dient der Datensatz iamkaikai/amazing\_logos\_v4, der auf der Plattform Hugging Face öffentlich zugänglich ist \parencite{iamkaikai_amazing_logos_v4}. Es handelt sich um ein umfangreiches, multimodales Korpus, das speziell für das Feintuning von Text-zu-Bild-Modellen konzipiert wurde. Der Datensatz umfasst rund 400.000 Datenpunkte, die jeweils aus einem Logo-Bild und einer zugehörigen, detaillierten textuellen Beschreibung (Caption) bestehen. Diese Captions beschreiben Kategorien, Merkmale, Konzepte, Stil und Stimmung der Logos in einem semistrukturierten Textformat, das im Allgemeinen dem Schema \texttt{<Unternehmen>, <Beschreibung>, <Kategorie>, [Tags Komma separiert]} folgt. Zwei Beispiele dafür sind in Abbildung \ref{fig:datenbasis_auszug} dargestellt. Die Gesamtgröße des Datensatzes beträgt etwa 14.2 GB.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.\textwidth]{abbildungen/datenbasis_auszug.png}
+    \caption{Auszug aus der Datenbasis - Logos und zugehörige Metadaten}
+    \label{fig:datenbasis_auszug}
+\end{figure}
+
+\subsection{Modellauswahl und Systemarchitektur}\label{sec:modellauswahl_systemarchitektur}
+Die Auswahl der geeigneten Modelle und die Konzeption der Systemarchitektur sind entscheidende Faktoren für den Erfolg des Projekts. In diesem Kapitel werden die evaluierten Optionen für die Kernkomponenten des Systems – das Basis-Diffusionsmodell, die Mechanismen zur Skizzengenerierung und die Architekturen zur strukturellen Steuerung – detailliert betrachtet und die getroffenen Entscheidungen begründet.
+
+\subsubsection{Basis-Diffusionsmodell}
+Die Grundlage für die Logo-Generierung bildet ein latentes Text-zu-Bild-Diffusionsmodell. Wie in Kapitel \ref{subsubsec:latent_diffusion_effizienz_durch_kompression} beschrieben, hat sich diese Modellklasse als äußerst leistungsfähig bei der Erzeugung hochwertiger und vielfältiger Bilder erwiesen. Für diese Arbeit wurde Stable Diffusion v1.5 \parencite{HuggingFace_StableDiffusionv15_ModelCard} als Basismodell gewählt. Die Gründe für diese Entscheidung sind vielfältig:
+\begin{itemize}
+    \item \textbf{Open Source und Erweiterbarkeit:} Als quelloffenes Modell bietet Stable Diffusion eine hohe Transparenz und eine breite Unterstützung durch die Entwicklergemeinschaft. Es existiert ein reichhaltiges Ökosystem an Werkzeugen, Erweiterungen und vortrainierten Kontrollmodellen, was die Implementierung komplexer Architekturen wie ControlNet erheblich vereinfacht.
+    \item \textbf{Ausgewogene Balance:} Im Vergleich zu neueren, größeren Modellen wie \acs{SDXL} \parencite{podell2023sdxlimprovinglatentdiffusion} oder proprietären APIs (z. B.. von Google oder Midjourney) bietet Stable Diffusion v1.5 eine exzellente Balance zwischen generativer Qualität, Rechenanforderungen und Trainingsgeschwindigkeit. Dies ermöglichte eine iterative Hyperparameter-Optimierung innerhalb des gegebenen Zeit- und Budgetrahmens.
+    \item \textbf{Bewährte Leistung:} Das Modell ist umfassend erprobt und seine Architektur gut verstanden, was eine solide Grundlage für die spezialisierten Feintuning-Aufgaben dieser Arbeit darstellt.
+\end{itemize}
+
+\subsubsection{Generierung der Kontroll-Skizzen}
+Ein zentraler Aspekt dieser Arbeit ist die Nutzung von Skizzen als strukturelle Vorgabe. Die Qualität dieser Skizzen ist maßgeblich für das Endergebnis. Es wurden zwei grundlegend verschiedene Ansätze zur Erzeugung dieser Skizzen evaluiert:
+
+\paragraph*{Ansatz 1: Externe, hochspezialisierte Modelle}
+Proprietäre Modelle wie das hypothetische Gemini 2.5 Flash Image (Nano Banana) von Google sind oft auf eine spezifische Aufgabe wie die ``Photo-to-Sketch''-Konvertierung trainiert und liefern potenziell eine sehr hohe Qualität \parencite{Google_Gemini25FlashImage}.
+\begin{itemize}
+    \item \textbf{Vorteile:} Hohe Ergebnisqualität, einfache Nutzung über eine API.
+    \item \textbf{Nachteile:} Erhebliche Kosten pro API-Aufruf, die bei einem Datensatz von mehreren tausend Bildern prohibitive Ausmaße annehmen würden. Zudem entstehen eine Abhängigkeit von einem externen Anbieter und eine mangelnde Kontrolle über den genauen Konvertierungsprozess.
+\end{itemize}
+
+\paragraph*{Ansatz 2: Nutzung von Stable Diffusion v1.5 mit ControlNet}
+Ein alternativer Ansatz besteht darin, das für diese Arbeit gewählte Basismodell, Stable Diffusion v1.5, selbst zur Skizzenerstellung zu nutzen. Hierbei wird eine grobe Kantenerkennung (Scribble-Map) des Original-Logos als Input für ein ControlNet-Modell (\texttt{lllyasviel/control\_v11p\_sd15\_scribble}) verwendet. Mit einem gezielten positiven Prompt (\textit{``minimalistic sketch, simple and abstract drawing, white background, amateur drawing''}) und einem negativen Prompt (\textit{``shadows, graphic, many details, gradients, filled areas''}), der unerwünschte Elemente ausschließt, wird das Modell angewiesen, eine neue, abstrahierte und saubere Skizze zu generieren. Die resultierende Qualität der Skizzen (Beispiel in Abb. \ref{fig:sketch_generation_process_detail}) wurde als für den Anwendungsfall geeignet eingestuft.
+\begin{itemize}
+    \item \textbf{Vorteile:} Keine zusätzlichen Kosten, volle Kontrolle über den Prozess, Nutzung der generativen Stärken des Modells zur Erzeugung einer künstlerisch interpretierten statt nur technisch extrahierten Skizze.
+    \item \textbf{Nachteile:} Die Qualität ist potenziell nicht so hoch wie bei einem dedizierten Spezialmodell.
+\end{itemize}
+Aufgrund der erheblichen Kostenvorteile und der größeren Flexibilität wurde für diese Arbeit der zweite Ansatz gewählt.
+
+\subsubsection{Architektur zur strukturellen Steuerung: Die ControlNet-Pipeline}
+Um die aus den Skizzen generierten Lineart-Maps als präzise Vorgabe für die finale Logo-Generierung zu nutzen, kommt mit ControlNet eine effektive Technologie zur strukturellen Steuerung zum Einsatz, die bereits in Kapitel \ref{subsubsec:controlnet_praezise_strukturelle_kontrolle} vorgestellt wurde. Anstatt ein eigenes Modell zu trainieren, wurden eine Auswahl an vortrainierten und weit verbreiteten ControlNet-Modellen von lllyasviel evaluiert \parencite{lllyasvielControlNet}\parencite{ControlNetGitHub}. Folgende Modelle sind prinzipiell auf Skizzen-Eingaben optimiert und wurden daher berücksichtigt: \texttt{Lineart} (``control\_v11p\_sd15\_lineart''), \texttt{Scribble} (``control\_v11p\_sd15\_scribble'') und \texttt{Canny} (``control\_v11p\_sd15\_canny''). Eine vergleichende Übersicht der Vor- und Nachteile dieser Modelle findet sich in Tabelle \ref{tab:controlnet_model_compare}.
+\begin{table}[h]
+    \centering
+    \caption{Vergleich der ControlNet-Modelle für die Logo-Generierung aus Skizzen}
+    \label{tab:controlnet_model_compare}
+    \begin{tabular}{p{0.15\textwidth} p{0.4\textwidth} p{0.4\textwidth}}
+        \toprule
+        \textbf{Modell} & \textbf{Vorteile}                                                                                                                                                                                   & \textbf{Nachteile}                                                                                                                              \\
+        \midrule
+        Canny           & Versucht, Kanten exakt nachzubilden.                                                                                                                                                                & Führt zu steifen, unkreativen Ergebnissen, da die Eingabe keine Canny-Map ist und die Interpretation nicht optimal gelingt.                     \\
+        \addlinespace
+        Scribble        & Lässt dem Diffusionsprozess kreativen Freiraum.                                                                                                                                                     & Zu ungenau: Ignoriert die feinen Details der sauberen Skizze und verliert die präzise Form. Der Vorteil der hochwertigen Vorlage geht verloren. \\
+        \addlinespace
+        Lineart         & \textbf{Optimaler Mittelweg:} Respektiert die exakte Form der hochwertigen Skizze (Strukturtreue). \newline Ermöglicht dem Diffusionsmodell, Textur und Stil kreativ zu füllen (kreative Freiheit). & Weniger robust bei sehr chaotischen oder "kritzeligen" Vorlagen.                                                                                \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Basierend auf empirischen Tests  (Abb. \ref{fig:controlnet_model_comparison}) wurde das Lineart-ControlNet-Modell als optimale Lösung identifiziert. Die Gründe für diese Entscheidung sind:
+\begin{itemize}
+    \item \textbf{Strukturtreue und Präzision:} Das Lineart-Modell ist darauf spezialisiert, Linienzeichnungen exakt zu folgen. Es stellt sicher, dass die präzise Form der Lineart-Map erhalten bleibt, was für die Wiedererkennbarkeit eines Logos unerlässlich ist. Im Gegensatz zu interpretativeren Modellen wie ``Scribble'', die feine Details ignorieren könnten, respektiert ``Lineart'' die vorgegebene Struktur.
+    \item \textbf{Balance zwischen Führung und Freiheit:} Während das Lineart-Modell die Struktur streng vorgibt, behält das Basis-Diffusionsmodell die kreative Freiheit, Aspekte wie Stil, Farbe und Textur basierend auf dem Text-Prompt zu füllen.
+\end{itemize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{abbildungen/controlnet_preprocessing_comparison.png}
+    \caption{Empirischer Vergleich von ControlNet-Modellen zur konditionierten Generierung von Logos}
+    \label{fig:controlnet_model_comparison}
+\end{figure}
+Diese Strategie kombiniert die Präzision von Skizzen mit der zuverlässigen strukturellen Kontrolle des Lineart-Modells. Dies gewährleistet eine hohe Übereinstimmung zwischen der visuellen Vorgabe und dem finalen Ergebnis.
+
+\subsection{Datenaufbereitung}
+Um den Rohdatensatz für das anspruchsvolle Training mit ControlNet vorzubereiten, wurde eine mehrstufige Aufbereitungspipeline entwickelt und durchlaufen. Diese Pipeline, die durch eine Serie von Jupyter-Notebooks implementiert ist, lässt sich in die folgenden logischen Schritte zusammenfassen, die sicherstellen, dass dem Modell ein qualitativ hochwertiger, ausbalancierter und reichhaltig annotierter Datensatz zur Verfügung steht.
+
+\subsubsection*{1. Metadaten-Bereinigung und -Anreicherung}
+Der erste Schritt der Datenaufbereitung konzentrierte sich auf die systematische Bereinigung und Anreicherung der textuellen Metadaten. Eine hohe Qualität dieser Daten ist entscheidend, da sie die Grundlage für die Erstellung der Trainings-Prompts und die semantische Steuerung des Diffusionsmodells bilden. Der Prozess umfasste mehrere Phasen, von der initialen Normalisierung der Roh-Captions über heuristische Korrekturen bis hin zur finalen Konsolidierung der Kategorien.
+
+\subparagraph*{Strukturierung der Roh-Captions durch Normalisierung und Parsen}
+Die ursprünglichen Captions lagen als semistrukturierte Text-Strings vor, die zunächst normalisiert werden mussten, um eine konsistente Datenbasis zu schaffen. In diesem ersten Schritt wurden die Strings von unerwünschten Sonderzeichen und überflüssigen Leerzeichen befreit. Dabei wurden auch spezifische, wiederkehrende Formatierungsfehler, wie ``, \&'' statt `` \&'', korrigiert. Der bereinigte String wurde anschließend mittels eines Komma-basierten Splittings in seine strukturellen Bestandteile zerlegt: \texttt{company}, \texttt{description}, \texttt{category} und \texttt{tags}.
+
+\begin{lstlisting}[language=Python, caption={Python-Code zur Normalisierung und Strukturierung der Roh-Captions}, label={lst:caption_parsing}]
+# Normalisierung von Leerzeichen und Sonderzeichen
+text = ' '.join(text.split())
+text = re.sub(r'[^\w\s&,\-]', '', text)
+
+# Korrektur spezifischer Formatierungsfehler
+text = text.replace(', &', ' &')
+text = text.replace(', .jpg,', ',,')
+text = text.replace(', Inc.', ' Inc.')
+
+# Komma-basiertes Splitting zur Strukturierung
+parts = [part.strip() for part in text.split(',')]
+company = parts[0] if len(parts) > 0 else None
+description = parts[1] if len(parts) > 1 else None
+category = parts[2] if len(parts) > 2 else None
+tags = parts[3:] if len(parts) > 3 else []
+\end{lstlisting}
+
+\subparagraph*{Heuristische Korrektur und Verfeinerung}
+Eine Analyse der initial geparsten Daten offenbarte häufige Inkonsistenzen, insbesondere bei der Zuordnung von Inhalten zu den Feldern \texttt{description} und \texttt{category}. Eine Ursache hierfür war, dass bei fehlenden Werten nicht immer ein leerer Platzhalter (z. B. ``,,'') verwendet wurde, wodurch nachfolgende \texttt{tags} fälschlicherweise als Kategorie bzw. Beschreibung interpretiert wurden. Um diese zu beheben und die semantische Trennschärfe zu erhöhen, wurden folgende heuristische Regeln implementiert:
+\begin{itemize}
+    \item \textbf{Korrektur von fehlinterpretierten Tags:} Wenn der Inhalt der Felder \texttt{company}, \texttt{description} oder \texttt{category} mit einem häufig auftretenden Tag übereinstimmte, wurde das jeweilige Feld geleert und der Wert stattdessen der Tag-Liste hinzugefügt.
+    \item \textbf{Korrektur von Beschreibung und Kategorie:} Es wurde eine Heuristik angewendet, um vertauschte Feldinhalte zu korrigieren. Wenn der extrahierte \texttt{category}-String mehr als zwei Wörter umfasste und gleichzeitig länger als der \texttt{description}-String war, wurden die Inhalte der beiden Felder getauscht. Diese Regel basiert auf der Annahme, dass Kategorien in der Regel kurz und prägnant sind, während Beschreibungen tendenziell ausführlicher ausfallen.
+    \item \textbf{Bereinigung und Umverteilung der Tags:} Die \texttt{tags}-Spalte wurde ebenfalls einer Bereinigung unterzogen. Tags, die aus mehr als drei Wörtern bestanden, wurden als Teil der Beschreibung interpretiert, aus der Tag-Liste entfernt und stattdessen an die \texttt{description}-Spalte angehängt. Dies schärfte die Definition eines Tags als kurzes, prägnantes Schlüsselwort.
+\end{itemize}
+
+\subparagraph*{Normalisierung}
+Nach der strukturellen und heuristischen Vorverarbeitung folgte die inhaltliche Normalisierung der Felder \texttt{category} und \texttt{tags}. Alle Werte wurden in Kleinbuchstaben umgewandelt, verbliebene Sonderzeichen entfernt und Leerzeichen durch Unterstriche ersetzt, um eine einheitliche Formatierung zu gewährleisten.
+
+\subparagraph*{Konsolidierung und Hierarchisierung der Kategorien}
+Die Anzahl der Kategorien wurde durch einen mehrstufigen Prozess drastisch reduziert, um eine effektive Klassifizierung zu ermöglichen:
+\begin{enumerate}
+    \item \textbf{Konsolidierung:} Ähnliche oder verwandte Kategorien wurden zu übergeordneten Gruppen zusammengefasst. Eine vordefinierte Zuordnungslogik überführte Hunderte spezifischer Kategorien (z. B. ``tech\_startup'', ``software\_company'') in eine einzige, konsolidierte Kategorie (``technology''). Rein numerische Kategorien (z. B. ``1990'') wurden entfernt.
+    \item \textbf{Reklassifizierung:} Für Logos, die nach der Konsolidierung als ``unclassified'' markiert waren, wurde eine Reklassifizierung versucht. Dabei wurden die zugehörigen Tags analysiert. Wenn ein Tag mit einer existierenden, häufigen Kategorie übereinstimmte, wurde diese Kategorie dem Logo zugewiesen und der redundante Tag entfernt.
+    \item \textbf{Finale Filterung und Hierarchisierung:} Kategorien, die nach allen Bereinigungsschritten nur noch sehr selten vorkamen, wurden entfernt. Durch diese Schritte konnte die Anzahl der Kategorien von ursprünglich 44.810 auf 109 reduziert werden. Abschließend wurden diese 109 feingranularen Kategorien zu 10 übergeordneten Top-Level-Kategorien zusammengefasst, um eine hierarchische Struktur für die Modellsteuerung zu schaffen.
+\end{enumerate}
+
+Die Auswirkungen dieser umfangreichen Bereinigung und Strukturierung werden in Tabelle \ref{tab:datenbereinigung_transformation_final} exemplarisch an einem Datenpunkt dargestellt, welcher die resultierende Datenstruktur veranschaulicht. Letztendlich blieben von den rund 400.000 ursprünglichen Datensätzen etwa 350.000 für die weitere Verarbeitung übrig.
+
+\begin{table}[H]
+    \centering
+    \caption{Beispielhafter Vergleich der Datenstruktur vor und nach der Bereinigung}
+    \label{tab:datenbereinigung_transformation_final}
+    \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}|p{0.48\textwidth}|p{0.48\textwidth}|}
+        \hline
+        \textbf{Vor der Bereinigung} & \textbf{Nach der Bereinigung} \\
+        \hline
+        \multirow{5}{=}{\textbf{caption:} Simple elegant logo for Aziz Firaat, Read Book Tick Checkmark Todo List, Website, successful vibe, minimalist, thought-provoking, abstract, recognizable, relatable, sharp, vector art, even edges}
+        & \textbf{company:} Simple elegant logo for Aziz Firaat \\
+        \cline{2-2}
+        & \textbf{description:} Read Book Tick Checkmark Todo List \\
+        \cline{2-2}
+        & \textbf{tags:} successful\_vibe, minimalist, thoughtprovoking, abstract, recognizable, relatable, sharp, vector\_art, even\_edges \\
+        \cline{2-2}
+        & \textbf{category\_main:} tech \\
+        \cline{2-2}
+        & \textbf{category:} web\_digital \\
+        \hline
+    \end{tabular*}
+\end{table}
+
+\subsubsection*{2. Kuration des Bild-Korpus}\label{sec:korpus_kurration}
+Aufbauend auf den bereinigten Metadaten wurde der verbleibende Bild-Pool von rund 350.000 Logos weiter kuratiert. Da das Hauptziel die Generierung minimalistischer Logos ist, wurde ein quantitativer Filtermechanismus entwickelt, um thematisch unpassende, zu komplexe oder fotorealistische Bilder systematisch auszuschließen. Obwohl alle Logos des Datensatzes bereits mit dem Tag ``minimalist'' versehen sind, dient dieser Schritt dazu, den Anspruch an den Minimalismus weiter zu schärfen und eine qualitativ hochwertigere sowie stilistisch konsistentere Auswahl zu gewährleisten.
+
+Hierfür wurde ein gewichteter ``Minimalismus-Score'' für jedes Bild berechnet. Dieser Score aggregiert verschiedene Bildmetriken wie die Anzahl der dominanten Farben, die Kantendichte, die Anzahl der Konturen, den Weißraumanteil und die Farbvarianz zu einem einzigen Wert zwischen 0 und 100, wobei ein höherer Wert auf einen minimalistischeren Charakter des Logos hindeutet. Die genaue Implementierung der Berechnungsfunktion ist in Quelltext \ref{lst:minimalism_score} dargestellt.
+\newpage
+\begin{lstlisting}[language=Python, caption={Python-Code zur Berechnung des Minimalismus-Scores von Logos, Quelle: in Anlehung an \textcite{Google_Gemini25Pro} (\ref{app:prompt_minimalism})}, label={lst:minimalism_score}]
+def calculate_minimalism_score(df):
+    """Berechnet einen Minimalismus-Score (0-100, höher = minimalistischer)"""
+    # Weniger Farben = minimalistischer
+    color_score = 1 - (df['dominant_colors'] - df['dominant_colors'].min()) / (df['dominant_colors'].max() - df['dominant_colors'].min() + 1e-8)
+    # Weniger Kanten = minimalistischer
+    edge_score = 1 - (df['edge_ratio'] - df['edge_ratio'].min()) / (df['edge_ratio'].max() - df['edge_ratio'].min() + 1e-8)
+    # Weniger Konturen = minimalistischer
+    contour_score = 1 - (df['num_contours'] - df['num_contours'].min()) / (df['num_contours'].max() - df['num_contours'].min() + 1e-8)
+    # Mehr Weißraum = minimalistischer
+    whitespace_score = (df['whitespace_ratio'] - df['whitespace_ratio'].min()) / (df['whitespace_ratio'].max() - df['whitespace_ratio'].min() + 1e-8)
+    # Weniger Farbvarianz = minimalistischer
+    variance_score = 1 - (df['color_variance'] - df['color_variance'].min()) / (df['color_variance'].max() - df['color_variance'].min() + 1e-8)
+
+    # Gewichteter Score
+    minimalism_score = (
+        color_score * 0.25 +          # 25% Gewicht für Farben
+        edge_score * 0.35 +           # 35% Gewicht für Kanten (wichtigster Faktor)
+        contour_score * 0.20 +        # 20% Gewicht für Konturen
+        whitespace_score * 0.10 +     # 10% Gewicht für Weißraum
+        variance_score * 0.10         # 10% Gewicht für Farbvarianz
+    ) * 100
+    return minimalism_score
+\end{lstlisting}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1.\textwidth]{abbildungen/minimalism_score_distribution.png}
+    \caption{Verteilung des berechneten Minimalismus-Scores im Logo-Datensatz}
+    \label{fig:minimalism_score_distribution}
+\end{figure}
+Die Verteilung dieses Scores über den gesamten Datensatz ist in Abbildung \ref{fig:minimalism_score_distribution} dargestellt. Um eine qualitativ hochwertige Auswahl zu treffen, wurde ein Schwellenwert am 50. Perzentil (Median) des Scores bei einem Wert von 82,2 festgelegt. Nur Logos, die diesen Schwellenwert erreichten oder überschritten, wurden für die weitere Verwendung beibehalten. Durch diesen Filterprozess wurde der Datensatz auf etwa 175.000 Bilder reduziert, die als besonders geeignet für das Training eines auf Minimalismus spezialisierten Modells eingestuft wurden.
+
+Anschließend wurde aus dem gefilterten Pool eine klassen-ausgewogene (basierend auf der Hauptkategorie) Teilmenge von 1.810 Datenpunkten extrahiert. Dieser pragmatische Schritt zielte darauf ab, den Rechenaufwand für die initialen Experimente zur Ermittlung optimaler Hyperparameter erheblich zu senken und eine schnelle Iteration zu ermöglichen. Diese Vorgehensweise steht im Einklang mit den Erkenntnissen von \textcite[S. 8]{ZHANG2023}, die nahelegen, dass bereits eine Datenmenge von rund 1.000 Bildern für ein initiales Training ausreichend sein kann. Diese Heuristik wird von \textcite[S. 5]{ruiz2023dreamboothfinetuningtexttoimage} bestätigt, die darüber hinaus feststellen, dass für das Feintuning auf ein spezifisches Subjekt bereits 3–5 Trainingsbeispiele genügen können. Durch die Extraktion einer klassen-ausgewogenen Teilmenge wird ein Bias des Modells gegenüber überrepräsentierten Kategorien verhindert und sichergestellt, dass jede Logo-Kategorie mit einer ähnlichen Anzahl von Beispielen im Training vertreten ist, was die Generalisierungsfähigkeit des Modells verbessert. Sobald die finale Hyperparameter-Konfiguration bestimmt ist, kann das Training für den produktiven Einsatz auf dem gesamten, kuratierten Datensatz von rund 175.000 Bildern erfolgen.
+
+\subsubsection*{3. Generierung von Kontrollsignalen}
+Für das Training des ControlNet-Modells sind zusätzliche bildbasierte Kontrollsignale erforderlich, die die Struktur der zu generierenden Logos vorgeben. Daher wurden für jedes Bild in der kuratierten Teilmenge strukturgebende Kontrollbilder erzeugt. Der Prozess umfasste zwei Hauptschritte:
+\begin{itemize}
+    \item \textbf{Skizzen-Generierung:} Mittels eines ControlNet-Modells (\texttt{lllyasviel/control\_v11p\_sd15\_scribble}) wurde aus einer groben Kantenerkennung (Scribble-Map) des Originallogos eine neue, abstrahierte und saubere Skizze generiert.
+    \item \textbf{Erstellung der Lineart-Map als Kontrollsignal:} Aus der generierten Skizze wurde eine Lineart-Map generiert. Diese dient als präzises, strukturelles Kontrollsignal für das Training des Lineart-ControlNet-Modells.
+\end{itemize}
+Der Prozess der Skizzengenerierung und -nachbearbeitung ist in Abbildung \ref{fig:sketch_generation_process_detail} beispielhaft dargestellt.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/sketch_gen_original_small.png}
+        \caption{Schritt 1: Originallogo}
+        \label{fig:sketch_gen_original_detail}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/sketch_gen_hed_small.png}
+        \caption{Schritt 2: Scribble-Map}
+        \label{fig:sketch_gen_hed_detail}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/sketch_gen_sketch_small.png}
+        \caption{Schritt 3: Generierte Skizze}
+        \label{fig:sketch_gen_sketch_detail}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.24\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/amazing_logo_v4035061_lineart_small.png}
+        \caption{Schritt 4: Lineart-Map}
+        \label{fig:sketch_gen_postproc_detail}
+    \end{subfigure}
+    \caption{Beispielhafte Skizzengenerierung und -nachbearbeitung zur Erzeugung von Kontrollsignalen.}
+    \label{fig:sketch_generation_process_detail}
+\end{figure}
+
+\subsubsection*{4. Erstellung der finalen Trainings-Prompts}
+Der letzte Schritt der Datenaufbereitung war die systematische Erstellung der Text-Prompts, die das Modell während des Trainings steuern. Ziel war es, die aufbereiteten Metadaten in ein präzises und konsistentes Format zu überführen, um die Qualität und stilistische Kohärenz der generierten Bilder zu verbessern.
+
+Jedem Prompt wird, ähnlich einer Überschrift, ein statischer Präfix vorangestellt, der die stilistische Grundausrichtung des Datensatzes (minimalistische Logos mit einfarbigem Hintergrund) vorgibt: \textit{``minimalistic logo, solid background''}. Dieser auf empirischen Vorversuchen basierende Präfix dient dazu, die Komplexität für das Modell zu reduzieren, indem ein einheitlicher visueller Kontext geschaffen wird.
+
+Zusätzlich wurden die Tags bereinigt. Begriffe, die als zu abstrakt, subjektiv oder für die visuelle Generierung nicht zielführend eingestuft wurden, wurden entfernt. Die entfernten Tags sind: \textit{relatable}, \textit{thoughtprovoking}, \textit{minimalist}, \textit{recognizable} und \textit{successful\_vibe}. Der Tag \textit{minimalist} wurde auch entfernt, um Redundanz mit dem Standard-Prompt zu vermeiden.
+
+Die finalen Prompts wurden durch die Verkettung des Standard-Prompts mit den dynamischen, datensatzspezifischen Merkmalen \texttt{description} und den bereinigten \texttt{tags} erstellt. Die Komponenten wurden durch ein Semikolon getrennt, um eine klare Struktur zu gewährleisten. Das resultierende Format ist:
+\begin{verbatim}
+minimalistic logo, solid background; 
+description: {description}; tags: {tags}
+\end{verbatim}
+In diesem ersten Entwurf wurde bewusst auf die Integration von Merkmalen wie dem Firmennamen (\texttt{company}) oder der Hauptkategorie des Geschäftsbereichs (\texttt{category\_main}) verzichtet. Die Annahme war, dass diese Informationen die Qualität in einer ersten Iteration nicht signifikant verbessern und potenziell als Rauschen (Noise) wirken könnten. Das Ergebnis dieses Prozesses ist eine \acs{CSV}-Datei, die für jeden Datensatz einen Identifier und den zugehörigen Prompt enthält.
+
+\subsubsection*{5. Aufteilung des Datensatzes}\label{sec:data_split}
+Der für die Hyperparameter-Optimierung verwendete, aufbereitete Datensatz von 1.810 Datenpunkten wurde – unter Verwendung eines festen Seeds (42) zur Sicherstellung der Reproduzierbarkeit – zufällig gemischt und in drei separate, disjunkte Mengen aufgeteilt, um ein wissenschaftlich fundiertes Training und eine valide Evaluierung zu gewährleisten:
+\begin{itemize}
+    \item \textbf{Trainings-Set (80\% = 1448):} Wird für das eigentliche Training der verschiedenen Modellvarianten verwendet.
+    \item \textbf{Validierungs-Set (10\% = 181):} Dient der Auswahl der optimalen Hyperparameter. Eine zufällige Teilmenge (die Hälfte, entsprechend 5\% des Gesamtdatensatzes) wird während des Trainings zur Überwachung des Verlusts (Validation Loss) genutzt. Das vollständige Validierungs-Set wird nach Abschluss eines Trainingslaufs herangezogen, um die Leistung der jeweiligen Konfiguration objektiv zu bewerten und das beste Modell auszuwählen.
+    \item \textbf{Test-Set (10\% = 181):} Bleibt während der gesamten Trainings- und Optimierungsphase unberührt. Es wird ausschließlich für die finale, einmalige Leistungsmessung des ausgewählten besten Modells verwendet, um dessen Generalisierungsfähigkeit auf ungesehenen Daten zu bewerten.
+\end{itemize}
+Alle zugehörigen Dateien (Logo, Skizzen, Lineart-Maps, und Prompt-Dateien) wurden in eine entsprechende Ordnerstruktur für den direkten Zugriff durch die Trainings-Skripte kopiert. Dieser sorgfältige und mehrstufige Aufbereitungsprozess stellt sicher, dass dem Modell ein qualitativ hochwertiger, ausbalancierter und reichhaltig annotierter Datensatz zur Verfügung steht, der die Grundlage für die Erreichung der gesetzten Forschungsziele bildet.
+
+\subsection{Feintuning-Strategie und Hyperparameter}\label{sec:feintuning_strategie}
+Die Anpassung eines vortrainierten Diffusionsmodells an eine neue, spezifische Domäne wie die Logo-Generierung erfordert eine sorgfältig konzipierte Feintuning-Strategie. Ziel ist es, dem Modell den gewünschten visuellen Stil beizubringen, ohne dessen ursprüngliches, breites Wissen über allgemeine Bildzusammenhänge zu verlieren. Im Folgenden werden die gewählte Architektur, die Feintuning-Methode und die entscheidenden Hyperparameter detailliert erläutert.
+
+\subsubsection{Architektur und Fokus des Feintunings}
+Die verwendete Systemarchitektur (Kapitel \ref{sec:modellauswahl_systemarchitektur}) besteht aus mehreren vortrainierten Modellen, die in einer Pipeline zusammenarbeiten. Für eine gezielte Anpassung ist es entscheidend, die Funktion jeder Komponente zu verstehen und den Trainingsprozess auf die relevanten Teile zu fokussieren.
+\begin{itemize}
+    \item \textbf{Text Encoder (\ac{CLIP}):} Transformiert den textuellen Input (Prompt) in einen numerischen Vektorraum (Embeddings). Diese Embeddings dienen dem \acs{UNet} als semantische Führung für den Inhalt und Stil des zu generierenden Bildes.
+    \item \textbf{Variational Autoencoder (\ac{VAE}):} Komprimiert Bilder aus dem Pixelraum in einen niedrigdimensionalen latenten Raum und dekodiert sie nach dem Diffusionsprozess zurück in ein sichtbares Bild. Das Training findet ausschließlich in diesem effizienten latenten Raum statt.
+    \item \textbf{ControlNet:} Ein zusätzliches neuronales Netz, das die Ausgabe des \acs{UNet}s durch eine strukturelle Bedingung (hier: eine Lineart-Map von einer Skizze) steuert. Es wird parallel zum \acs{UNet} ausgeführt und gibt seine Ausgaben als zusätzliche Führung an die einzelnen Blöcke des \acs{UNet}s weiter.
+    \item \textbf{\acs{UNet}:} Das Kernstück des Diffusionsprozesses. Es ist dafür verantwortlich, das Rauschen aus einer latenten Darstellung schrittweise zu entfernen, geleitet von den semantischen Vorgaben des Text Encoders und den strukturellen Vorgaben des ControlNet-Modells. Das \acs{UNet} ist die Komponente, die die visuellen Merkmale, Stile und Kompositionen eines Bildes lernt und generiert.
+\end{itemize}
+
+Der Fokus des Feintunings liegt ausschließlich auf der Anpassung des \textbf{\acs{UNet}-Modells}. Da das \acs{UNet} für die visuelle Synthese verantwortlich ist, ist es die primäre und einzige Komponente, deren Gewichte modifiziert werden müssen, um dem Modell einen neuen Stil beizubringen. Alle anderen Hauptkomponenten werden während des Trainings bewusst ``eingefroren'' (\texttt{requires\_grad=False}), ihre Gewichte also nicht aktualisiert. Diese strategische Entscheidung, das Training auf das \acs{UNet} zu beschränken, ist nicht nur eine Frage der Effizienz. Wie \textcite[S. 5]{tehraninasab2025pixelspressureexploringfinetuning} zeigen, kann dieser Ansatz auch effektiver sein als ein vollumfängliches Training aller Komponenten.
+\begin{itemize}
+    \item Das Einfrieren von \ac{VAE} und Text Encoder ist eine etablierte Praxis, um die Stabilität des latenten Raums und des fundamentalen Sprachverständnisses des Basismodells zu erhalten. Eine Modifikation dieser Komponenten könnte zu unvorhersehbaren und oft qualitativ schlechteren Ergebnissen führen, da die erlernten Repräsentationen ihre Generalisierungsfähigkeit verlieren.
+    \item Das ControlNet-Modell wird ebenfalls eingefroren, um seine Fähigkeit zur präzisen Extraktion struktureller Informationen aus den Lineart-Maps zu bewahren. Trainiert wird lediglich die Reaktion des \acs{UNet}s auf diese strukturellen Informationen im neuen Kontext der Logo-Generierung.
+\end{itemize}
+
+\subsubsection{Parametereffizientes Feintuning mittels \ac{LoRA}}
+Für die Anpassung des \acs{UNet}s wurde die Methode der Low-Rank Adaptation (\acs{LoRA}) gewählt. Wie in Kapitel \ref{subpara:low-rank_adaptation_lora} detailliert beschrieben, handelt es sich um eine Technik des Parameter-Efficient Fine-Tuning (\acs{PEFT}), die einem vollständigen Feintuning aus zwei wesentlichen Gründen vorgezogen wurde:
+\begin{enumerate}
+    \item \textbf{Ressourceneffizienz:} \ac{LoRA} reduziert die Anzahl der trainierbaren Parameter drastisch, was das Training auf handelsüblicher Hardware mit begrenztem \acs{VRAM} (z. B. 16 GB) ermöglicht.
+    \item \textbf{Vermeidung von katastrophalem Vergessen:} Da die ursprünglichen Gewichte des \acs{UNet}s eingefroren bleiben und nur kleine, additive Matrizen trainiert werden, wird das breite Wissen des Basismodells bewahrt und lediglich gezielt angepasst.
+\end{enumerate}
+Die Implementierung nutzt die \texttt{peft}-Bibliothek von Hugging Face (Kapitel \ref{sec:impl_train_env} - Software und Containerisierung), um die \ac{LoRA}-Adaptermatrizen zu den spezifizierten Schichten des \acs{UNet}s hinzuzufügen.
+
+\subsubsection{Analyse der zu evaluierenden Hyperparameter}\label{sec:train_params}
+Die Wahl der Hyperparameter ist entscheidend für den Erfolg des \ac{LoRA}-Trainings. Anstatt von einer einzigen, statischen Konfiguration auszugehen, wird im Rahmen dieser Arbeit ein explorativer Ansatz verfolgt, bei dem verschiedene Werte für die Schlüsselparameter systematisch evaluiert werden, um eine optimale Konfiguration zu finden. Die Auswahl der zu untersuchenden Wertebereiche basiert auf etablierten Praktiken in der Literatur sowie auf vorläufigen empirischen Tests.
+
+\begin{itemize}
+    \item \textbf{Zielmodule:} Dieser Parameter legt fest, auf welche Schichten des \acs{UNet}s \ac{LoRA} angewendet wird. Es werden zwei Konfigurationen verglichen. Die erste beschränkt sich, wie von \textcite[S. 5]{HU2021} vorgeschlagen, nur auf die Aufmerksamkeits-Schichten (``to\_q'', ``to\_k'', ``to\_v''). Die zweite, erweiterte Konfiguration bezieht zusätzlich die Feed-Forward-Netzwerk-Schichten (``proj\_in'', ``proj\_out'') und die Output-Projektionen (``to\_out.0'') mit ein. Dieser umfassendere Ansatz folgt der Empfehlung von \textcite[S. 6]{dettmers2023qloraefficientfinetuningquantized}, da die Einbeziehung weiterer Schichten die Anpassungsfähigkeit des Modells erhöhen kann.
+
+    \item \textbf{\acs{LoRA}-Rang ($r$):} Der Rang $r$ ist der wichtigste Hyperparameter von \ac{LoRA}, da er die Kapazität (Anzahl der trainierbaren Parameter) der Anpassung definiert. Während für einfache Stilanpassungen oft niedrige Ränge ausreichen, erfordert die komplexe Aufgabe der Logo-Generierung potenziell mehr Ausdrucksstärke. Laut \textcite[S. 10]{HU2021} können Ränge von 4 oder 8 bereits einen ``Sweet Spot'' darstellen, wobei die optimale Wahl stark vom spezifischen Anwendungsfall abhängt. Daher wird ein Bereich von Rängen evaluiert, typischerweise Potenzen von zwei: \textbf{\{4, 8, 16, 32\}}.
+
+    \item \textbf{\acs{LoRA}-Alpha ($\alpha$):} Alpha ist ein Skalierungsfaktor, der die Stärke der \ac{LoRA}-Anpassung im Verhältnis zum Rang steuert. In dieser Arbeit wird $\alpha$ auf das \textbf{1,5-fache des Rangs $r$} festgelegt ($\alpha = 1.5 \times r$). Diese Formel bleibt über alle Experimente hinweg gleich. Diese Entscheidung basiert auf der Erkenntnis von \textcite[S. 4]{HU2021}, dass die effektive Stärke der \acs{LoRA}-Anpassung primär über die Lernrate gesteuert werden kann, wodurch eine separate, detaillierte Abstimmung von $\alpha$ weniger kritisch wird.
+
+    \item \textbf{Lernrate:} Beim Feintuning großer vortrainierter Modelle sind kleine Lernraten entscheidend, um eine stabile Konvergenz zu gewährleisten. Für ein vollständiges Feintuning von Stable Diffusion empfehlen beispielsweise \textcite[S. 5]{ruiz2023dreamboothfinetuningtexttoimage} eine Lernrate von $5 \times 10^{-6}$. Da bei \acs{PEFT}-Methoden wie \acs{LoRA} die Lernrate typischerweise höher angesetzt wird als beim vollständigen Feintuning \parencite[S. 15]{zhang2025parameter}, wird in dieser Arbeit ein Wertebereich zwischen \textbf{$1 \times 10^{-6}$ und $1 \times 10^{-4}$} untersucht. Dieser Bereich spiegelt auch die in den Experimenten von \textcite{HU2021} verwendeten Werte wider und deckt somit sowohl konservative als auch progressivere Raten ab.
+
+    \item \textbf{Batch-Größe:} Die Batch-Größe, also die Anzahl der gleichzeitig verarbeiteten Datenbeispiele, stellt einen Kompromiss zwischen der Stabilität der Gradientenschätzung und den Hardware-Limitierungen dar. Eine größere Batch-Größe führt zu stabileren Gradienten, erfordert jedoch mehr \acs{VRAM}. Aufgrund der Zielhardware (16 GB \acs{VRAM}) wird die Batch-Größe auf den \textbf{maximal praktikablen Wert} festgelegt, der sich in Tests als \textbf{8} erwiesen hat. Kleinere Werte werden nicht primär untersucht, da sie das Training tendenziell instabiler machen.
+
+
+\end{itemize}
+Die finale Auswahl der besten Hyperparameter-Kombination erfolgt durch die Bewertung der Leistung jedes trainierten Modells auf dem Validierungs-Set (Kapitel \ref{sec:data_split} - Aufteilung des Datensatzes).
+

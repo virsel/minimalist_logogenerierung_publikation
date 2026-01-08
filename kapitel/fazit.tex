@@ -1,0 +1,16 @@
+\section{Conclusion and Outlook}\label{sec:fazit}
+
+\subsection{Summary}
+This thesis investigated the resource-efficient optimization of a multimodal diffusion model for minimalist logo generation. By combining LoRA-based fine-tuning with ControlNet guidance, we developed a prototype capable of operating on consumer-grade hardware (NVIDIA RTX 5080).
+The experimental evaluation confirmed that structural guidance is indispensable for geometric precision (SSIM +32.4\%), while domain-specific fine-tuning significantly enhances semantic and visual quality (FID -30.9\%). Systematic analysis identified the learning rate as the critical lever for convergence, with higher rates ($1e-4$) consistently yielding superior results.
+
+\subsection{Scientific Contributions and Implications}
+A key contribution of this work is the validation of parameter-efficient training strategies for the specific domain of logo design.
+\begin{itemize}
+    \item \textbf{Hyperparameter Dynamics:} Our findings confirm literature recommendations for high learning rates ($1e-4$) in PEFT methods \parencite{HU2021}. However, contrary to the suggestion that very low ranks (4 or 8) constitute a "sweet spot" \parencite{HU2021}, our experiments demonstrated that a higher rank of 32 provided the necessary capacity to capture the stylistic nuances of minimalist design without overfitting.
+    \item \textbf{Efficiency Verification:} We demonstrated that a compact dataset of 1,500 images and approximately 2,500 training steps are sufficient to achieve professional-grade results. This challenges the assumption that massive datasets are a prerequisite for effective domain adaptation.
+\end{itemize}
+
+\subsection{Future Directions}
+Future optimization should prioritize data quality over quantity. The integration of Vision-Language Models (VLMs) offers a promising avenue to replace simplistic tag-based captions with dense, descriptive natural language, significantly improving semantic alignment. Furthermore, advances in synthetic data generation and evolving model architectures suggest that the barrier to entry for training specialized, high-quality generative models will continue to decrease.
+Generative AI establishes itself not as a replacement for human expertise, but as a powerful instrument for exploration and iteration, democratizing access to professional design tools.

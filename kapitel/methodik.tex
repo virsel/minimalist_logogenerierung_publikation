@@ -1,0 +1,125 @@
+\newpage
+\section{Methodology}\label{sec:methodik}
+
+\subsection{Research Design and Dataset}
+This study employs a quantitative-experimental approach to evaluate the performance of fine-tuned diffusion models for minimalist logo generation. The core objective is to adapt a base model using parameter-efficient fine-tuning (PEFT) and structural control techniques.
+
+The foundation for training is the \texttt{iamkaikai/amazing\_logos\_v4} dataset \parencite{iamkaikai_amazing_logos_v4}, a multimodal corpus of approximately 400,000 logo-caption pairs. This dataset was chosen for its scale and detailed metadata, which includes company names, descriptions, and stylistic tags.
+
+\subsection{Model Selection and Architecture}\label{sec:modellauswahl}
+\subsubsection{Base Model}
+Stable Diffusion v1.5 \parencite{HuggingFace_StableDiffusionv15_ModelCard} was selected as the base model. Its open-source nature, extensive ecosystem, and balance between generative quality and computational requirements make it ideal for iterative optimization on consumer hardware (NVIDIA RTX 5080, 16GB VRAM).
+
+\subsubsection{Structural Control: The ControlNet Pipeline}
+To enforce structural fidelity to user sketches, we utilize ControlNet \parencite{ZHANG2023}. We evaluated three pretrained models: Canny, Scribble, and Lineart.
+\begin{itemize}
+  \item \textbf{Canny:} Often resulted in rigid, uncreative outputs due to strict edge adherence.
+  \item \textbf{Scribble:} Too loose, often ignoring fine structural details of the input sketch.
+  \item \textbf{Lineart:} Identified as the \textbf{optimal solution}. It respects the precise form of the sketch while allowing the diffusion model sufficient freedom to interpret style and texture (Figure \ref{fig:controlnet_model_comparison}).
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{abbildungen/controlnet_preprocessing_comparison_en.png}
+  \caption{Empirical comparison of ControlNet models for conditioned logo generation.}
+  \label{fig:controlnet_model_comparison}
+\end{figure}
+
+\subsection{Data Preparation}
+A multi-stage pipeline was implemented to curate a high-quality subset for training.
+
+\subsubsection{Metadata Cleaning and Enrichment}
+The raw dataset contained semi-structured captions that required systematic cleaning to ensure high-quality semantic control. The processing pipeline involved three key steps:
+
+\begin{enumerate}
+  \item \textbf{Normalization and Parsing:} Raw text strings were cleaned of special characters and split into structured fields: \texttt{company}, \texttt{description}, \texttt{category}, and \texttt{tags}.
+  \item \textbf{Heuristic Correction:} Inconsistencies were addressed using heuristic rules. For instance, misplaced tags were reassigned, and swapped content between \texttt{description} and \texttt{category} was corrected based on string length analysis.
+  \item \textbf{Category Consolidation:} To enable effective classification, the number of categories was reduced from 44,810 to 109 by grouping synonyms (e.g., merging "tech\_startup" into "technology") and removing rare instances. These were further aggregated into 10 top-level categories.
+\end{enumerate}
+
+Table \ref{tab:data_cleaning_comparison} illustrates the transformation from the raw caption to the structured metadata.
+
+\begin{table}[H]
+  \centering
+  \caption{Comparison of data structure before and after cleaning}
+  \label{tab:data_cleaning_comparison}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}|p{0.48\textwidth}|p{0.48\textwidth}|}
+    \hline
+    \textbf{Before Cleaning} & \textbf{After Cleaning} \\
+    \hline
+    \multirow{5}{=}{\textbf{caption:} Simple elegant logo for Aziz Firaat, Read Book Tick Checkmark Todo List, Website, successful vibe, minimalist, thought-provoking, abstract, recognizable, relatable, sharp, vector art, even edges}
+    & \textbf{company:} Simple elegant logo for Aziz Firaat \\
+    \cline{2-2}
+    & \textbf{description:} Read Book Tick Checkmark Todo List \\
+    \cline{2-2}
+    & \textbf{tags:} successful\_vibe, minimalist, thoughtprovoking, abstract, recognizable, relatable, sharp, vector\_art, even\_edges \\
+    \cline{2-2}
+    & \textbf{category\_main:} tech \\
+    \cline{2-2}
+    & \textbf{category:} web\_digital \\
+    \hline
+  \end{tabular*}
+\end{table}
+
+\subsubsection{Curation and Minimalism Score}
+To ensure the dataset reflects the target aesthetic, we developed a weighted "Minimalism Score" (0-100) based on features such as color count, edge density, contour complexity, and whitespace ratio.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{abbildungen/mini_score_distr_en.png}
+  \caption{Distribution of the calculated Minimalism Score in the dataset.}
+  \label{fig:minimalism_score_distribution}
+\end{figure}
+As shown in Figure \ref{fig:minimalism_score_distribution}, we filtered the dataset using the median score (82.2) as a threshold. From the remaining pool, a class-balanced subset of 1,810 images was extracted to facilitate efficient hyperparameter optimization \parencite{ZHANG2023, ruiz2023dreamboothfinetuningtexttoimage}.
+
+\subsubsection{Generation of Control Signals}
+Since the dataset contains finished logos, synthetic "sketches" were generated to train the model's response to rough inputs.
+\begin{enumerate}
+  \item \textbf{Sketch Generation:} We used Stable Diffusion v1.5 with the Scribble ControlNet to transform original logos into abstract, hand-drawn-style sketches. The Scribble model was chosen here to simulate the imperfection of human drawings.
+  \item \textbf{Lineart Map:} These sketches were then processed into clean Lineart maps to serve as the precise control signal for the training pipeline.
+\end{enumerate}
+The process is illustrated in Figure \ref{fig:sketch_generation_process_detail}.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{abbildungen/sketch_gen_original_small.png}
+    \caption{Original Logo}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{abbildungen/sketch_gen_hed_small.png}
+    \caption{Scribble Map}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{abbildungen/sketch_gen_sketch_small.png}
+    \caption{Generated Sketch}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{abbildungen/amazing_logo_v4035061_lineart_small.png}
+    \caption{Lineart Map}
+  \end{subfigure}
+  \caption{Generation of synthetic control signals (sketches) from the dataset.}
+  \label{fig:sketch_generation_process_detail}
+\end{figure}
+
+\subsubsection{Prompt Engineering and Data Split}
+Text prompts were standardized to the format: \texttt{minimalistic logo, solid background; description: \{description\}; tags: \{tags\}}.
+The curated dataset (1,810 images) was split into \textbf{Training (80\%, 1448)}, \textbf{Validation (10\%, 181)}, and \textbf{Test (10\%, 181)} sets using a fixed seed.
+
+\subsection{Fine-Tuning Strategy and Hyperparameters}\label{sec:feintuning_strategie}
+We employ Low-Rank Adaptation (LoRA) \parencite{HU2021} to fine-tune the UNet component of Stable Diffusion. The VAE, Text Encoder, and ControlNet are frozen to preserve their pretrained capabilities and ensure resource efficiency.
+
+We systematically analyze the following hyperparameters to identify the optimal configuration:
+\begin{itemize}
+  \item \textbf{Target Modules:} Comparing adaptation of only Attention layers vs. an Extended configuration (Attention + Feed-Forward layers) \parencite{dettmers2023qloraefficientfinetuningquantized}.
+  \item \textbf{LoRA Rank ($r$):} Evaluating ranks \textbf{\{4, 8, 16, 32\}} to find the balance between expressivity and efficiency \parencite{HU2021}.
+  \item \textbf{LoRA Alpha ($\alpha$):} Fixed at $1.5 \times r$. This decision is based on the finding of \textcite[p. 4]{HU2021} that the effective strength of LoRA adaptation can be primarily controlled via the learning rate, making a separate, detailed tuning of $\alpha$ less critical.
+  \item \textbf{Learning Rate:} Exploring the range \textbf{$1 \times 10^{-6}$ to $1 \times 10^{-4}$}, as PEFT methods typically tolerate higher rates than full fine-tuning \parencite{zhang2025parameter}.
+  \item \textbf{Batch Size:} Fixed at \textbf{8} to maximize hardware utilization.
+\end{itemize}

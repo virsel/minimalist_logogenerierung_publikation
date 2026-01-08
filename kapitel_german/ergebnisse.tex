@@ -1,0 +1,278 @@
+\newpage
+\section{Ergebnisse}\label{sec:ergebnisse}
+% Quant. und qual. Ergebnisse, Beispiele, Abbildungen, Tabellen
+\subsection{Quantitative Evaluation}
+
+Die quantitative Evaluation bildet den Kern der Ergebnisanalyse und dient der objektiven und systematischen Bewertung der durchgeführten Experimente. Ziel ist es, die in den Hypothesen formulierten Annahmen anhand der in Kapitel \ref{subsec:bewertungsmetriken_und_qualitaetskriterien} definierten Metriken – \ac{CLIP}-Score, \ac{SSIM} und \ac{FID} – zu überprüfen. Alle Experimente wurden, wie in Kapitel \ref{sec:implementierung} beschrieben, unter Verwendung von MLflow protokolliert, um eine lückenlose Nachverfolgbarkeit der Hyperparameter und der resultierenden Metriken zu gewährleisten.
+
+Die Untersuchung konzentriert sich auf die Sensitivität des Modells gegenüber zentralen Hyperparametern des \ac{LoRA}-Feintunings, insbesondere dem \ac{LoRA}-Rang (r), der Lernrate (lr) sowie der strategischen Entscheidung, welche Modellkomponenten adaptiert werden. Die Auswahl der hierfür erprobten Hyperparameter-Kombinationen orientiert sich an den in Kapitel \ref{sec:feintuning_strategie} definierten Vorgaben. Eine vollständige Übersicht ist im \ref{app:hyperpara_kombis} zu finden. Der \ac{LoRA}-Rang bestimmt die Kapazität der adaptiven Matrizen, während die Lernrate die Schrittweite der Gewichtsaktualisierungen steuert. Für die zu adaptierenden Komponenten werden zwei Konfigurationen verglichen: eine, die \ac{LoRA}-Adapter nur auf die Attention-Blöcke anwendet (``attn\_only''), und eine erweiterte (``extended''), die zusätzlich die Feed-Forward-Layer modifiziert. Dieser Vergleich soll klären, welche der beiden Strategien für die Domäne des Logodesigns effektiver ist.
+
+\subsubsection{Analyse der Verlustkurven}
+Die Analyse der Validierungsverlustkurven in Abbildung \ref{fig:val_loss_curves_extended} und \ref{fig:val_loss_curves_attn_only} liefert erste Einblicke in die Trainingseffektivität der verschiedenen Hyperparameter-Konfigurationen. Der Validierungsverlust, der nach jeder der insgesamt 14 Epochen auf dem halben Validierungsdatensatz gemessen wurde, dient als Indikator dafür, wie gut das Modell auf ungesehenen Daten generalisiert. Ein niedriger und stabiler Verlust deutet auf ein effektives Lernen hin, während starke Schwankungen oder ein ansteigender Trend auf Instabilität oder Overfitting hindeuten können. Auf die Darstellung des Trainingsverlusts wird in den Diagrammen zugunsten der Übersichtlichkeit verzichtet.
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/att_val_loss.png}
+        \caption{Konfiguration ``attn\_only''}
+        \label{fig:val_loss_curves_attn_only}
+    \end{subfigure}
+    \vfill % Fügt einen vertikalen Abstand zwischen den Bildern hinzu
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/ext_val_loss.png}
+        \caption{Konfiguration ``extended''}
+        \label{fig:val_loss_curves_extended}
+    \end{subfigure}
+    \caption{Vergleich der Verlustkurven für die \ac{LoRA}-Konfigurationen ``attn\_only'' und ``extended'' bei unterschiedlichen Hyperparametern.}
+    \label{fig:val_loss_curves}
+\end{figure}
+
+
+
+\paragraph*{Beobachtungen bei der ``attn\_only'' \ac{LoRA}-Konfiguration}
+Die Verlustkurven für die ``attn\_only''-Konfiguration sind in Abbildung \ref{fig:val_loss_curves_attn_only} dargestellt.
+\begin{itemize}
+    \item \textbf{Einfluss der Lernrate:} Die Lernrate zeigt einen deutlichen Einfluss auf das Verlustniveau. Die höchste Lernrate von \texttt{1e-4} (dunkelste Farbtöne) führt zu den niedrigsten Verlustwerten, während die niedrigeren Lernraten (helle Farbtöne) einen durchweg höheren Verlust aufweisen. Ein wesentlicher Unterschied in der reinen Konvergenzgeschwindigkeit ist dabei nicht zu beobachten.
+    \item \textbf{Einfluss des \ac{LoRA}-Rangs:} Der Einfluss des Rangs ist bei dieser Konfiguration insgesamt gering. Am deutlichsten wird er bei einer Lernrate von \texttt{1e-5} (mitteldunkle Farbtöne), wo tendenziell ein höherer Rang zu einem niedrigeren Verlust führt (Blau > Grün > Dunkelgrau). Bei der höchsten Lernrate von \texttt{1e-4} ist der Einfluss des Rangs hingegen vernachlässigbar; die Kurven für die Ränge 4, 8, 16 und 32 verlaufen hier sehr ähnlich und zeigen keine signifikanten Unterschiede in der Endleistung.
+    \item \textbf{Besonderheit bei r=4 und lr=1e-5:} Eine auffällige Ausnahme bildet die Kombination aus einem \ac{LoRA}-Rang von 4 und einer Lernrate von \texttt{1e-5}. Deren Verlustkurve (blau, mittlere Helligkeit) weist im Vergleich zu allen anderen Konfigurationen deutlich geringere Schwankungen auf. Obwohl damit kein besonders niedriges Verlustniveau erreicht wird, deutet die Stabilität der Kurve auf einen sehr gleichmäßigen Lernprozess hin.
+\end{itemize}
+
+
+
+\paragraph*{Beobachtungen bei der erweiterten \ac{LoRA}-Konfiguration (``extended'')}
+
+Abbildung \ref{fig:val_loss_curves_extended} zeigt die Verlustkurven für die ``extended''-Konfiguration, bei der \ac{LoRA}-Adapter sowohl in die Attention- als auch in die Feed-Forward-Layer injiziert wurden.
+\begin{itemize}
+    \item \textbf{Einfluss der Lernrate:} Noch deutlicher als bei der ``attn\_only''-Konfiguration erweist sich die Lernrate als dominantester Faktor. Der Abstand zwischen den Verlustniveaus der verschiedenen Lernraten ist hier signifikant größer. Die höchste Lernrate von \texttt{1e-4} (dunkelste Farbtöne) führt durchweg zu den mit Abstand niedrigsten Verlustwerten, während die Lernraten \texttt{1e-5} (mittlere Helligkeit) und \texttt{1e-6} (hellste Farbtöne) in einem sichtbar höheren Validierungsverlust resultieren. Dies deutet auf eine suboptimale Konvergenz der niedrigeren Lernraten innerhalb der festgelegten Trainingsdauer hin.
+    \item \textbf{Einfluss des \ac{LoRA}-Rangs:} Ähnlich zur ``attn\_only''-Konfiguration ist der Einfluss des Rangs bei der Lernrate \texttt{1e-5} (mittlere Helligkeit) am deutlichsten, wo tendenziell ein höherer Rang zu einem geringeren Verlust führt. Bei der optimalen Lernrate von \texttt{1e-4} ist der Einfluss des \ac{LoRA}-Rangs ($r$) hingegen weniger ausgeprägt. Alle Ränge (4, 8, 16, 32) zeigen hier eine ähnliche, stark schwankende Verlustkurve, die sich jedoch tendenziell auf einem niedrigen Niveau einpendelt.
+    \item \textbf{Besonderheit bei r=32 und lr=1e-6:} Eine interessante Ausnahme zeigt sich bei der Kombination eines hohen Rangs (32) mit der niedrigsten Lernrate (\texttt{1e-6}). Die zugehörige Verlustkurve (hellgrau) weicht ab Epoche 12 vom bisherigen Muster ab und erreicht gegen Ende des Trainings einen niedrigeren Verlust als die Konfiguration mit derselben Rang- aber höherer Lernrate (\texttt{1e-5}). Dies deutet darauf hin, dass niedrigere Lernraten bei ausreichender Trainingsdauer das Potenzial haben, zu besseren Ergebnissen zu führen.
+\end{itemize}
+
+
+\paragraph*{Synthese der Beobachtungen}
+Ein direkter Vergleich der beiden Konfigurationen offenbart grundlegende Unterschiede im Trainingsverhalten. Die ``attn\_only''-Modelle (Abbildung \ref{fig:val_loss_curves_attn_only}) erreichen tendenziell ein niedrigeres Validierungsverlustniveau als die ``extended''-Modelle. Die Verlustkurven der verschiedenen Hyperparameter-Kombinationen liegen hier deutlich näher beieinander, was auf eine geringere Sensitivität gegenüber Rang und Lernrate hindeutet. Nach einem kurzzeitigen Ausreißer bei Epoche 8 stabilisiert sich der Verlust auf einem durchweg niedrigen Niveau.
+
+Im Gegensatz dazu zeigen die ``extended''-Modelle (Abbildung \ref{fig:val_loss_curves_extended}) eine größere Streuung zwischen den Kurven, was auf eine höhere Sensitivität gegenüber den gewählten Hyperparametern schließen lässt. Die Amplituden der Schwankungen sind hier tendenziell etwas größer, auch wenn kein einzelner Ausreißer so markant ist wie bei der ``attn\_only''-Konfiguration. Trotz der höheren Schwankungen zeigt der Verlust auch hier eine fallende Tendenz.
+
+Für beide Ansätze ist eine Lernrate von \texttt{1e-4} klar überlegen, während der \ac{LoRA}-Rang eine untergeordnete Rolle für den reinen Validierungsverlust zu spielen scheint. Die starken Schwankungen in den Verlustkurven deuten auf eine gewisse Instabilität hin, ein für die \ac{LoRA}-Feinabstimmung von Diffusionsmodellen dokumentiertes Phänomen \parencite{luo2024privacypreservinglowrankadaptationmembership}. Da der Verlust nicht ansteigt, gibt es keine klaren Anzeichen für starkes Overfitting.
+
+
+
+\subsubsection{Analyse der Strukturtreue (\ac{SSIM})}
+
+Die strukturelle Übereinstimmung, gemessen am \ac{SSIM}-Score, dient als wichtiger Indikator für die Beurteilung der Strukturtreue, da sie quantifiziert, wie exakt das generierte Logo der vorgegebenen Skizze folgt. Eine hohe Strukturtreue ist jedoch nicht das alleinige Ziel, da kreative Abweichungen von der Vorlage das Ergebnis qualitativ verbessern können. Ein hoher \ac{SSIM}-Wert ist primär ein Indikator für die zuverlässige Kontrolle der Form und Komposition durch das ControlNet-Modell.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{abbildungen/ssim.png}
+    \caption{Vergleich der \ac{SSIM}-Scores in Abhängigkeit von Lernrate, \ac{LoRA}-Rang und \ac{LoRA}-Modul-Konfiguration}
+    \label{fig:ssim_vs_rank_lr}
+\end{figure}
+Abbildung \ref{fig:ssim_vs_rank_lr} illustriert den Einfluss der verschiedenen Hyperparameter auf die Strukturtreue, gemessen am \ac{SSIM}-Score. Die Auswertung der Daten zeigt eine komplexe Wechselwirkung zwischen Lernrate, \ac{LoRA}-Rang und den Zielmodulen, anstatt eines einzelnen dominanten Faktors.
+
+\begin{itemize}
+    \item \textbf{Wechselwirkung der Hyperparameter:} Es lässt sich kein einzelner, durchweg dominanter Hyperparameter identifizieren. Der Einfluss der Lernrate auf den \ac{SSIM}-Score steht in einer deutlichen Wechselbeziehung mit dem \ac{LoRA}-Rang und der Modul-Konfiguration. Während tendenziell eine niedrigere Lernrate wie \texttt{1e-6} (hellorangene Linien) zu besseren Ergebnissen führt, ist dieser Trend nicht absolut. Beispielsweise erzielt die ``extended''-Konfiguration mit einer hohen Lernrate von \texttt{1e-4} (schwarze durchgezogene Linie) und hohem \ac{LoRA}-Rang bessere Ergebnisse als mit einer mittleren Lernrate von \texttt{1e-5} (rote durchgezogene Linie). Der Einfluss der Lernrate ist somit nicht isoliert zu betrachten, sondern muss im Kontext der anderen Hyperparameter bewertet werden.
+
+    \item \textbf{Einfluss der Zielmodule (``attn\_only'' vs. ``extended''):} Es lässt sich kein eindeutig überlegenes Modul-Setup identifizieren. Bei den niedrigeren Lernraten (\texttt{1e-6} bis \texttt{1e-5}) erzielt die ``attn\_only''-Konfiguration (gestrichelte Linie) leicht bessere Ergebnisse als die ``extended''-Konfiguration (durchgezogene Linie). Bei der höchsten Lernrate (\texttt{1e-4}) kehrt sich dieses Muster um, und ``extended'' ist überlegen. Da keine klaren Muster ableitbar sind, kann keine definitive Aussage über die Überlegenheit eines Moduls getroffen werden.
+
+    \item \textbf{Einfluss des \ac{LoRA}-Rangs:} Der \ac{LoRA}-Rang (x-Achse) hat ebenfalls nur einen geringen und nicht eindeutigen Einfluss. Die Kurven verlaufen entlang der x-Achse weitgehend flach, was auf eine geringe Sensitivität gegenüber dem Rang hindeutet. Eine Ausnahme bildet die Lernrate \texttt{1e-5}, insbesondere in der ``extended''-Konfiguration (rote durchgezogene Linie): Hier führt ein höherer Rang zu einem deutlich schlechteren \ac{SSIM}-Score, was auf ein mögliches Overfitting bei größerer Modellkapazität hindeuten könnte.
+
+    \item \textbf{Vergleich mit dem Basismodell:} Bemerkenswert ist, dass das untrainierte Basismodell (grau gepunktete Linie) mit einem \ac{SSIM}-Wert von 0,827 einen der höchsten Strukturtreue-Werte aller getesteten Konfigurationen erreicht und damit auf dem Niveau des besten abgestimmten Modells mit niedriger Lernrate liegt. Dies unterstreicht, dass das vortrainierte Stable-Diffusion-Modell in Kombination mit ControlNet bereits eine exzellente strukturelle Kontrolle bietet und das \ac{LoRA}-Finetuning hinsichtlich der reinen Strukturtreue keinen signifikanten Vorteil bringt.
+\end{itemize}
+
+Zusammenfassend lässt sich schlussfolgern, dass eine niedrige Lernrate tendenziell eine gute Ausgangsbasis für eine hohe Strukturtreue ist. Die Tatsache, dass das Basismodell ohne jegliches Finetuning bereits den höchsten \ac{SSIM}-Wert erreicht, zeigt, dass das vortrainierte Stable-Diffusion-Modell eine sehr gute Grundlage bietet. Allerdings ist die strukturelle Übereinstimmung allein nicht ausreichend für die Beurteilung eines optimalen Logo-Generierungsmodells. Ein hoher \ac{SSIM}-Wert garantiert zwar eine formgetreue Umsetzung der Skizze, gibt jedoch keine Auskunft über die semantische Genauigkeit der textuellen Vorgaben oder die allgemeine visuelle Qualität des generierten Logos. Für eine ganzheitliche Bewertung sind daher die zusätzliche Analyse der semantischen Übereinstimmung (\ac{CLIP}-Score) und der Bildqualität (\ac{FID}) unerlässlich, um ein Modell zu identifizieren, das nicht nur strukturtreu, sondern auch semantisch kohärent und visuell ansprechend generiert.
+
+\subsubsection{Analyse der semantischen Übereinstimmung (\acs{CLIP}-Score)}
+
+Der \ac{CLIP}-Score misst die semantische Kohärenz zwischen dem generierten Bild und dem Text-Prompt. Ein hoher Wert deutet darauf hin, dass das Modell die textuellen Vorgaben bezüglich Stil, Inhalt und Atmosphäre erfolgreich umgesetzt hat.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{abbildungen/clip.png}
+    \caption{Vergleich der \ac{CLIP}-Scores in Abhängigkeit von Lernrate, \ac{LoRA}-Rang und \ac{LoRA}-Modul-Konfiguration}
+    \label{fig:clip_vs_rank_lr}
+\end{figure}
+
+Die Analyse des \ac{CLIP}-Scores, dargestellt in Abbildung \ref{fig:clip_vs_rank_lr}, offenbart komplexe Wechselwirkungen zwischen den Hyperparametern. Obwohl die absoluten Unterschiede der \ac{CLIP}-Werte im Vergleich gering sind und sich in einem kleinen Prozentbereich bewegen, lassen sich klare Tendenzen erkennen:
+
+\begin{itemize}
+    \item \textbf{Wechselwirkung von Lernrate und \ac{LoRA}-Rang:} Der Einfluss des \ac{LoRA}-Rangs auf die semantische Güte ist stark von der Lernrate abhängig und zeigt gegensätzliche Trends:
+          \begin{itemize}
+              \item Bei einer hohen Lernrate von \texttt{1e-4} (schwarze Linien) führt ein höherer Rang zu einem besseren \ac{CLIP}-Score. Dies deutet darauf hin, dass eine größere Modellkapazität dem Modell hilft, bei einem aggressiven Training die semantischen Konzepte besser zu erfassen.
+              \item Bei einer mittleren Lernrate von \texttt{1e-5} (rote Linien) ist der Trend umgekehrt: Ein höherer Rang führt hier zu einem schlechteren \ac{CLIP}-Score.
+              \item Bei der niedrigsten Lernrate von \texttt{1e-6} (hellorangene Linien) scheint der Rang hingegen keinen signifikanten Einfluss zu haben; die Werte bleiben über alle Ränge hinweg relativ konstant.
+          \end{itemize}
+
+    \item \textbf{Einfluss der Zielmodule (``attn\_only'' vs. ``extended''):} Auch hier ist das Bild nicht einheitlich. Bei der hohen Lernrate von \texttt{1e-4} ist die ``extended''-Konfiguration (durchgezogene Linie) der ``attn\_only''-Konfiguration (gestrichelte Linie) deutlich überlegen. Bei der mittleren Lernrate von \texttt{1e-5} kehrt sich das Verhältnis jedoch um, und ``attn\_only'' schneidet besser ab.
+
+    \item \textbf{Vergleich mit dem Basismodell:} Das untrainierte Basismodell (grau gepunktete Linie) erreicht mit einem \ac{CLIP}-Score von 0,280 ein moderates Niveau, das deutlich unter den besten Finetuningkonfigurationen liegt. Dies steht im Kontrast zu den \ac{SSIM}-Ergebnissen und zeigt, dass das Basismodell zwar strukturell präzise arbeitet, aber Verbesserungspotenzial bei der semantischen Erfassung der textuellen Vorgaben aufweist. Das Finetuning ermöglicht eine signifikante Steigerung der semantischen Kohärenz.
+
+\end{itemize}
+
+Zusammenfassend lässt sich festhalten, dass für eine maximale semantische Übereinstimmung eine hohe Lernrate (\texttt{1e-4}) in Kombination mit einem hohen \ac{LoRA}-Rang und der ``extended''-Konfiguration am besten geeignet ist. Die Konfiguration mit Rang 32 erreicht hier mit einem Wert von 0,291 den höchsten \ac{CLIP}-Score aller Experimente und übertrifft das Basismodell um etwa 4\,\%. Dies steht im direkten Gegensatz zu den Ergebnissen der \ac{SSIM}-Analyse, bei der das Basismodell die besten Werte erzielte, und unterstreicht die Bedeutung des Finetunings für die semantische Dimension der Logo-Generierung.
+
+\subsubsection{Analyse der Bildqualität und des Realismus (\acs{FID})}
+
+Die Fréchet Inception Distance (\ac{FID}) bewertet die allgemeine visuelle Qualität und den Realismus der generierten Bilder, indem sie deren Merkmalsverteilung mit der von echten Bildern vergleicht. Ein niedrigerer \ac{FID}-Wert steht für eine höhere Bildqualität und weniger visuelle Artefakte.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{abbildungen/fid.png}
+    \caption{Vergleich der FID-Scores in Abhängigkeit von Lernrate, \ac{LoRA}-Rang und \ac{LoRA}-Modul-Konfiguration}
+    \label{fig:fid_vs_rank_lr}
+\end{figure}
+
+Abbildung \ref{fig:fid_vs_rank_lr} visualisiert den Einfluss der Hyperparameter auf die Bildqualität, gemessen am \ac{FID}-Score. Die Ergebnisse widersprechen teilweise den Erwartungen und zeigen klare Tendenzen:
+
+\begin{itemize}
+    \item \textbf{Einfluss der Lernrate:} Die Lernrate erweist sich als der mit Abstand dominanteste Faktor für die Bildqualität. Entgegen der in Kapitel \ref{sec:feintuning_strategie} hergeleiteten impliziten Annahme, dass eine hohe Lernrate zu Artefakten führen könnte, erzielt die höchste Lernrate von \texttt{1e-4} (schwarze Linien) durchweg die besten (niedrigsten) \ac{FID}-Werte. Die Ergebnisse sind hier um ca. 15-30\,\% besser als bei den niedrigeren Lernraten. Dies deutet darauf hin, dass ein schnelles und aggressives Training für die Erlernung der visuellen Merkmale in diesem Datensatz vorteilhaft ist.
+
+    \item \textbf{Einfluss der Zielmodule (``attn\_only'' vs. ``extended''):} Die Überlegenheit der ``extended''-Konfiguration (durchgezogene Linie) zeigt sich ausschließlich in Kombination mit der optimalen Lernrate von \texttt{1e-4}. Hier ist sie der ``attn\_only''-Konfiguration (gestrichelte Linie) signifikant überlegen. Bei den niedrigeren Lernraten (\texttt{1e-5} und \texttt{1e-6}) gibt es hingegen keine nennenswerten Unterschiede zwischen den beiden Konfigurationen.
+
+    \item \textbf{Einfluss des \ac{LoRA}-Rangs:} Der \ac{LoRA}-Rang (x-Achse) hat über alle Konfigurationen hinweg keinen signifikanten oder systematischen Einfluss auf den \ac{FID}-Score. Die Kurven verlaufen weitgehend flach, was darauf hindeutet, dass eine Erhöhung der Modellkapazität durch einen höheren Rang keine Verbesserung der allgemeinen Bildqualität bewirkt.
+
+    \item \textbf{Vergleich mit dem Basismodell:} Das untrainierte Basismodell (grau gepunktete Linie) erreicht mit einem \ac{FID}-Score von 220,590 einen deutlich schlechteren Wert als die besten Finetuningkonfigurationen. Ähnlich wie beim \ac{CLIP}-Score zeigt sich hier ein klarer Vorteil des Finetunings: Das beste Modell (Lernrate \texttt{1e-4}, ``extended''-Konfiguration) erreicht \ac{FID}-Werte um 158, was einer Verbesserung von etwa 28\,\% entspricht. Dies unterstreicht, dass das Finetuning nicht nur die semantische Kohärenz, sondern auch die allgemeine visuelle Qualität und die Merkmalsverteilung der generierten Logos signifikant verbessert.
+\end{itemize}
+
+Zusammenfassend lässt sich festhalten, dass für eine hohe Bildqualität eine hohe Lernrate von \texttt{1e-4} in Kombination mit der ``extended''-Konfiguration die beste Wahl ist. Der \ac{LoRA}-Rang spielt in diesem Kontext eine untergeordnete Rolle. Im Gegensatz zur \ac{SSIM}-Metrik, bei der das Basismodell bereits exzellente Werte erreicht, zeigt sich beim \ac{FID}-Score ein deutlicher Mehrwert des Finetunings, was die Bedeutung der domänenspezifischen Anpassung für die visuelle Qualität der Logo-Generierung bestätigt.
+
+\subsubsection{Synthese und Auswahl des besten Modells}
+
+Die vorangegangenen Analysen haben gezeigt, dass die Optimierung der Hyperparameter einen Zielkonflikt zwischen den verschiedenen Qualitätsdimensionen darstellt. Während eine niedrige Lernrate die Strukturtreue (\ac{SSIM}) maximiert, profitieren die semantische Genauigkeit (\ac{CLIP}) und die allgemeine Bildqualität (\ac{FID}) von einer hohen Lernrate. Um eine fundierte Entscheidung für das beste Gesamtmodell zu treffen, wurde eine kombinierte Metrik entwickelt.
+
+Dazu wurden die drei Metriken – \ac{SSIM}, \ac{CLIP}-Score und \ac{FID} – für alle 20 Experimente normalisiert. Da bei der \ac{FID}-Metrik niedrigere Werte besser sind, wurde sie vor der Normalisierung invertiert, sodass für alle drei Metriken ein höherer Wert eine bessere Leistung signalisiert. Anschließend wurden die normalisierten Werte additiv zu einem Gesamt-Score verknüpft, der als Grundlage für die Rangfolge der Modelle diente.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{abbildungen/best_models.png}
+    \caption{Top 5 Modell-Konfigurationen im Vergleich (normalisierte Metriken)}
+    \label{fig:best_models}
+\end{figure}
+
+Abbildung \ref{fig:best_models} visualisiert die fünf besten Modellkonfigurationen anhand ihrer normalisierten Metrik-Werte in einem Radar-Chart. Die Ergebnisse zeigen ein klares Muster: Die leistungsstärksten Modelle nutzen durchweg die hohe Lernrate von \texttt{1e-4} in Kombination mit der ``extended''-Konfiguration. Obwohl diese Modelle, wie in der \ac{SSIM}-Analyse (Abschnitt \ref{fig:ssim_vs_rank_lr}) ersichtlich, nicht die höchste Strukturtreue aufweisen, kompensieren sie dies durch überlegene Werte bei Bildqualität und semantischer Kohärenz. Der Einfluss des \ac{LoRA}-Rangs ist zwar vorhanden, aber weniger dominant als die Wahl der Lernrate und der Zielmodule.
+
+Das Modell mit der Konfiguration \textbf{\ac{LoRA}-Rang 32, Lernrate \texttt{1e-4} und ``extended''-Zielmodulen} erzielte den höchsten Gesamt-Score. Es stellt den besten Kompromiss dar, indem es eine exzellente Bildqualität (\ac{FID}) und semantische Genauigkeit (\ac{CLIP}) liefert, während die Strukturtreue (\ac{SSIM}) auf einem akzeptablen Niveau bleibt. Für den Anwendungsfall der Logo-Generierung wird daher die Priorität auf eine hohe visuelle und inhaltliche Qualität gelegt.
+
+Dieses Modell wird folglich für die nachfolgende Validierung auf dem Testdatensatz und die qualitative Analyse verwendet.
+
+
+\subsubsection{Evaluation auf dem Testdatensatz}\label{sec:testresults}
+
+Um die Generalisierungsfähigkeit des ausgewählten Modells (\ac{LoRA}-Rang 32, Lernrate $1e-4$, ``extended''-Konfiguration) zu überprüfen, wurde eine abschließende Evaluation auf dem ungesehenen Testdatensatz durchgeführt. Dieser umfasst Logos, die weder im Training noch in der Validierung verwendet wurden, und ermöglicht somit eine unabhängige Bewertung der Modellleistung. Zur umfassenden Einordnung werden drei Modellvarianten verglichen: das Basismodell ohne strukturelle Konditionierung, das Basismodell mit ControlNet-Skizzenkonditionierung sowie das feinabgestimmte Modell mit ControlNet.
+
+Tabelle \ref{tab:testresults} stellt die Ergebnisse der drei Modellvarianten gegenüber:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Modell}                      & \textbf{CLIP-Score} $\uparrow$ & \textbf{FID} $\downarrow$ & \textbf{SSIM} $\uparrow$ \\
+        \midrule
+        Basismodell (ohne ControlNet)        & 0,284                          & 223,2                     & 0,617                    \\
+        Basismodell                          & 0,274                          & 229,0                     & 0,817                    \\
+        Feinabgestimmtes Modell              & 0,284                          & 158,2                     & 0,789                    \\
+        \midrule
+        Verbesserung (finegetuned vs. Basis) & +3,7\,\%                       & -30,9\,\%                 & -3,4\,\%                 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Vergleich der Metriken auf dem Testdatensatz zwischen Basismodell ohne ControlNet, Basismodell mit ControlNet und feinabgestimmtem Modell mit ControlNet}
+    \label{tab:testresults}
+\end{table}
+
+Die Ergebnisse auf dem Testdatensatz beleuchten die jeweilige Rolle von struktureller Konditionierung und domänenspezifischem Finetuning und führen zu mehreren aufschlussreichen Erkenntnissen.
+
+\paragraph*{Bedeutung der strukturellen Konditionierung (ControlNet)}
+Der Vergleich zwischen dem Basismodell ohne und mit ControlNet unterstreicht die zentrale Bedeutung der Skizzenkonditionierung für die strukturelle Kontrolle. Die Integration von ControlNet steigert den \ac{SSIM}-Score drastisch von 0,617 auf 0,817 (+32,4\,\%), was die präzise Umsetzung der vorgegebenen Skizzenstruktur ermöglicht. Dieser Befund bestätigt die Überlegenheit multimodaler Konditionierung, wie sie von \textcite{ZHANG2023} postuliert wurde. Interessanterweise geht diese strukturelle Präzision mit einem leichten Rückgang beim \ac{CLIP}-Score einher (von 0,284 auf 0,274), was darauf hindeutet, dass die strikte strukturelle Bindung die semantische Interpretationsfreiheit des Modells geringfügig einschränkt.
+
+\paragraph*{Effekt des domänenspezifischen Finetunings}
+Das feinabgestimmte Modell zeigt im Vergleich zum Basismodell mit ControlNet deutliche Verbesserungen in zwei zentralen Dimensionen: Der \ac{CLIP}-Score steigt um 3,7\,\% (von 0,274 auf 0,284), wodurch das Niveau des unkonditionierten Basismodells wieder erreicht wird. Dies zeigt, dass das Finetuning die semantische Kohärenz wiederherstellt, ohne die strukturelle Kontrolle aufzugeben. Besonders bemerkenswert ist die dramatische Verbesserung beim \ac{FID}-Score um 30,9\,\% (von 229,0 auf 158,2), was auf eine signifikant höhere visuelle Qualität und bessere Merkmalsverteilung hindeutet. Die leichte Reduktion des \ac{SSIM}-Scores um 3,4\,\% (von 0,817 auf 0,789) ist im Kontext dieser erheblichen Qualitätsgewinne akzeptabel und deutet auf einen bewussten Trade-off hin: Das Modell opfert minimale strukturelle Präzision zugunsten semantischer Akkuratesse und visueller Qualität.
+
+\paragraph*{Synthese der Erkenntnisse}
+Zusammenfassend demonstrieren die Ergebnisse eine klare Hierarchie der Modellverbesserungen: ControlNet ist essentiell für strukturelle Kontrolle, während das Finetuning diese Kontrolle um semantische Präzision und visuelle Qualität erweitert. Das feinabgestimmte Modell vereint die Vorteile beider Ansätze und erzielt damit die beste Gesamtleistung für die Logo-Generierung. Diese Ergebnisse unterstreichen, dass das entwickelte System erfolgreich domänenspezifisches Wissen erworben hat und auf neue, ungesehene Logo-Designs generalisieren kann.
+
+
+\subsection{Qualitative Analyse mit Fallbeispielen}\label{sec:qualitative_analyse}
+
+Die quantitative Evaluation hat gezeigt, dass das Modell mit \ac{LoRA}-Rang 32, Lernrate $1e-4$ und ``extended''-Konfiguration den besten Kompromiss zwischen Bildqualität, semantischer Genauigkeit und Strukturtreue darstellt. Um die praktische Eignung dieses Modells für die Logo-Generierung zu validieren, wurde eine qualitative Analyse anhand konkreter Fallbeispiele durchgeführt. Während quantitative Metriken objektive Aussagen über technische Aspekte treffen, erfassen sie nicht die subjektive Wahrnehmung menschlicher Betrachter hinsichtlich ästhetischer Umsetzung der Modelleingaben und kommerzieller Verwertbarkeit.
+
+\subsubsection{Auswahl und Generierung der Fallbeispiele}
+
+Für die qualitative Evaluation wurden vier repräsentative Fallbeispiele (F1, F2, F3, F5 in \ref{app:fallbeispiele}) aus dem Testdatensatz ausgewählt, um verschiedene Logo-Typen abzudecken: Wortmarken, Bildmarken (piktoriale und abstrakte) und kombinierte Marken. Ergänzt wurden diese durch Fallbeispiel F4 (siehe \ref{app:fallbeispiele}), ein Monogramm basierend auf einer handgezeichneten Skizze, um die Modellleistung bei einer authentischen menschlichen Eingabe zu prüfen. Diese Diversität ermöglicht eine umfassende Bewertung der Modellfähigkeiten über verschiedene Design-Kategorien hinweg.
+
+Für jedes Fallbeispiel generierten beide Modelle -- das Basismodell (Stable Diffusion v1.5 mit ControlNet) sowie das feinabgestimmte Modell -- unter Verwendung der zugehörigen Skizze und des Text-Prompts jeweils ein Logo. Die Generierung erfolgte mit exakt einer Iteration pro Modell ohne nachträgliche Auswahl oder Optimierung (kein Cherry-Picking), um eine objektive und reproduzierbare Darstellung der tatsächlichen Modellleistung zu gewährleisten.
+
+\subsubsection{Technisch-stilistische Bewertung der generierten Logos}\label{sec:objective_logo_gen_analysis}
+
+Eine technisch-stilistische Betrachtung der generierten Logos (siehe Fallbeispiele in \ref{app:fallbeispiele}) offenbart klare qualitative Unterschiede zwischen dem Basismodell und dem abgestimmten Modell.
+
+\paragraph*{Stärken des optimierten Modells}
+Das optimierte Modell zeigt eine deutlich verbesserte Fähigkeit, spezifische Anweisungen aus dem Prompt umzusetzen. Eine zentrale Anforderung für minimalistische Logos, der \textit{solid background}, wird vom abgestimmten Modell durchweg zuverlässig umgesetzt, während das Basismodell teilweise ungewollte Texturen oder Farbverläufe im Hintergrund erzeugt. Darüber hinaus erzeugt das optimierte Modell konsistente Farbpaletten mit klar definierten Kontrasten, was auf eine erfolgreiche Adaption an die im Trainingsdatensatz enthaltenen ästhetischen Konventionen des Logodesigns hindeutet.
+
+\paragraph*{Identifizierte Schwächen des optimierten Modells}
+Das optimierte Modell weist bei der Umsetzung spezifischer Details einige Schwächen auf.
+\begin{itemize}
+    \item In Fallbeispiel F3 (siehe Abbildung \ref{fig:fallbeispiel_4}) wird die Schrift nicht gemäß der Skizze umgesetzt und wirkt unsauber und deformiert.
+    \item In Fallbeispiel F4 (siehe Abbildung \ref{fig:fallbeispiel_5}) ignoriert das Modell die Anforderung eines Farbverlaufs (``gradient'') und erzeugt stattdessen ein einfarbig blaues Logo.
+\end{itemize}
+Obwohl das Finetuning die allgemeine Leistungsfähigkeit signifikant steigert, zeigen diese spezifischen Unzulänglichkeiten, dass auch das trainierte Modell noch Verbesserungspotenzial bei der feingranularen Interpretation von Designvorgaben aufweist. Die Behebung solcher Defizite bleibt eine Herausforderung für zukünftige Iterationen.
+
+\subsubsection{Methodik der Onlinebefragung}
+
+Zur systematischen Erfassung der subjektiven Wahrnehmung wurde eine Onlinebefragung mittels SoSci Survey \parencite{leiner2025soscisurvey} durchgeführt (Zeitraum: 05.11.2025 bis 12.11.2025, Plattform: \url{https://survey.fom.de/forms001413/}).
+
+Für jedes der fünf Fallbeispiele wurden den Teilnehmenden zunächst die Modelleingaben präsentiert (Text-Prompt, negativer Prompt und Eingabe-Skizze), gefolgt von den beiden generierten Logos in verblindeter Form. Die Verblindung verhindert Verzerrungen durch Erwartungseffekte.
+
+Anschließend bewerteten die Teilnehmenden jedes Logo-Paar anhand zweier Dimensionen:
+
+\begin{enumerate}
+    \item \textbf{Optische Umsetzung:} \textit{„Welches Logo ist unter Berücksichtigung von Prompt und Skizze optisch besser umgesetzt?"} (Erfasst technische Qualität und Treue zur Vorgabe)
+    \item \textbf{Kommerzielle Eignung:} \textit{„Welches Logo ist geeigneter und wirkungsvoller für eine kommerzielle Marke?"} (Bewertet professionelle Anmutung und praktische Verwertbarkeit)
+\end{enumerate}
+
+Zusätzlich wurde die Vorerfahrung der Teilnehmenden im Bereich Grafikdesign und Markenentwicklung erfasst (\textit{Keine}, \textit{Gelegentlich}, \textit{Student/Amateur}, \textit{Beruflich/Umfangreich}), um eine differenzierte Analyse nach Expertise-Niveau zu ermöglichen.
+
+\subsubsection{Analyse der Umfrageergebnisse}
+
+An der Umfrage nahmen 47 Personen teil, die insgesamt 235 Bewertungspaare (5 Logo-Sets $\times$ 47 Teilnehmende) zu je zwei Dimensionen beurteilten. Die Teilnehmenden wählten bei jeder Fragestellung zwischen zwei verblindeten Logos -- eines vom Basismodell und eines vom feinabgestimmten Modell generiert. Die Präferenzrate für das feinabgestimmte Modell wurde für jede Dimension separat als prozentualer Anteil der Stimmen berechnet, die für das optimierte Modell abgegeben wurden. Abbildung \ref{fig:praeferenz_nach_dimension} zeigt die Verteilung dieser Präferenzen über beide Bewertungsdimensionen hinweg.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{results_survey/praeferenz_nach_dimension.png}
+    \caption{Prozentuale Präferenz für das feinabgestimmte Modell nach Bewertungsdimension}
+    \label{fig:praeferenz_nach_dimension}
+\end{figure}
+
+Das feinabgestimmte Modell erhielt in beiden Dimensionen eine leichte Mehrheit der Stimmen: Bei der optischen Umsetzung wurden 51,5\,\% (121 von 235) der Logos des feinabgestimmten Modells bevorzugt, bei der kommerziellen Eignung 52,8\,\% (124 von 235). Abbildung \ref{fig:finetuned_praeferenz_erfahrung} differenziert diese Präferenzen nach dem Erfahrungslevel der Teilnehmenden, während Abbildung \ref{fig:finetuned_praeferenz_logoset} die Variation über die einzelnen Logo-Sets hinweg visualisiert. Besonders hervorzuheben ist die deutliche Präferenz für das feinabgestimmte Modell bei Fallbeispiel F4 (Gesamt 89,4\,\%), dem Monogramm, das auf einer handgezeichneten Skizze basiert. Dies deutet darauf hin, dass das Modell seine Stärken insbesondere bei der Interpretation authentischer, menschlicher Eingaben ausspielt.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{results_survey/finetuned_praeferenz_erfahrung.png}
+    \caption{Präferenz für feinabgestimmtes Modell nach Erfahrungslevel}
+    \label{fig:finetuned_praeferenz_erfahrung}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{results_survey/finetuned_praeferenz_logoset.png}
+    \caption{Präferenz für feinabgestimmtes Modell pro Fallbeispiel}
+    \label{fig:finetuned_praeferenz_logoset}
+\end{figure}
+
+Über beide Dimensionen hinweg erhielt das feinabgestimmte Modell 245 von insgesamt 470 Bewertungen (52,1\,\%), was einem Netto-Vorteil von 20 Bewertungen gegenüber dem Basismodell entspricht. In 42,1\,\% der Fälle (99 von 235 Bewertungspaaren) wurde das feinabgestimmte Modell in beiden Dimensionen präferiert, während das Basismodell nur in 37,9\,\% (89 von 235) in beiden Dimensionen bevorzugt wurde. Die verbleibenden 20,0\,\% zeigen gemischte Präferenzen.
+
+Um die statistische Signifikanz dieser Präferenz zu prüfen, wurde ein zweiseitiger Binomialtest durchgeführt. Dieser Test überprüft die Nullhypothese $H_0: p = 0{,}5$, dass beide Modelle mit gleicher Wahrscheinlichkeit bevorzugt werden. Die Teststatistik basiert auf der Anzahl der Erfolge $k$ (Präferenz für das feinabgestimmte Modell) bei $n$ unabhängigen Bewertungen:
+
+\begin{formel}[H]
+    \caption{Zweiseitiger Binomialtest \parencite[Kapitel 24.5]{zar2010}}
+    \label{formel:binomialtest}
+    \begin{equation}
+        p\text{-Wert} = 2 \cdot \min\left(\sum_{i=0}^{k} \binom{n}{i} p_0^i (1-p_0)^{n-i}, \sum_{i=k}^{n} \binom{n}{i} p_0^i (1-p_0)^{n-i}\right)
+    \end{equation}
+\end{formel}
+
+wobei $p_0 = 0{,}5$ die Nullhypothese repräsentiert und $\binom{n}{i}$ den Binomialkoeffizienten bezeichnet.
+
+Für die Gesamtbewertung (beide Dimensionen kombiniert) ergibt sich mit $k = 245$ Erfolgen bei $n = 470$ Bewertungen ein p-Wert von $p = 0{,}3808 > 0{,}05$. Die Nullhypothese kann damit nicht verworfen werden. Die leichte Präferenz für das feinabgestimmte Modell ist statistisch nicht signifikant. Auch die einzelnen Dimensionen erreichen keine statistische Signifikanz (Optik: $p = 0{,}6956$, Kommerziell: $p = 0{,}4338$). Die Ergebnisse deuten darauf hin, dass die wahrgenommenen Unterschiede zwischen den Modellen zu gering sind, um bei dieser Stichprobengröße eine statistisch belastbare Aussage treffen zu können.
+

@@ -1,0 +1,132 @@
+\newpage
+\section{Results}\label{sec:results}
+
+\subsection{Quantitative Evaluation}
+The quantitative evaluation objectively assesses the model's performance using CLIP score, SSIM, and FID, as defined in Chapter \ref{sec:eval_pipe}. All experiments were tracked via MLflow. The study focuses on the sensitivity of the model to LoRA rank ($r$), learning rate ($lr$), and the choice of adapted modules (``attn\_only'' vs. ``extended'').
+
+\subsubsection{Loss Curve Analysis}
+Validation loss serves as an indicator of generalization. Figures \ref{fig:val_loss_curves_attn_only} and \ref{fig:val_loss_curves_extended} illustrate the training dynamics.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/att_val_loss_en.png}
+        \caption{Configuration ``attn\_only''}
+        \label{fig:val_loss_curves_attn_only}
+    \end{subfigure}
+    \vfill
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{abbildungen/ext_val_loss_en.png}
+        \caption{Configuration ``extended''}
+        \label{fig:val_loss_curves_extended}
+    \end{subfigure}
+    \caption{Comparison of validation loss curves for ``attn\_only'' and ``extended'' configurations across hyperparameters.}
+    \label{fig:val_loss_curves}
+\end{figure}
+
+\paragraph*{Observations for ``attn\_only''}
+The learning rate is the primary driver, with $lr=1e-4$ yielding the lowest loss. The LoRA rank has a minor impact, mostly noticeable at $lr=1e-5$ where higher ranks perform slightly better. A notable exception is the combination of $r=4$ and $lr=1e-5$, which exhibits remarkably low variance, indicating a very stable learning process despite not achieving the absolute lowest loss.
+
+\paragraph*{Observations for ``extended''}
+The learning rate is even more dominant here, with significant gaps between $lr=1e-4$ and lower rates. While rank influence is generally low at the optimal learning rate, the combination of high rank ($r=32$) and lowest learning rate ($lr=1e-6$) shows an interesting anomaly: it achieves lower loss than the $lr=1e-5$ configuration towards the end of training, suggesting that lower learning rates might benefit from extended training durations.
+
+\paragraph*{Synthesis}
+The analysis reveals that the learning rate is the dominant factor. For both configurations, $lr=1e-4$ consistently yields the lowest loss. The ``attn\_only'' models generally achieve lower loss levels with less variance compared to ``extended'' models, which exhibit higher sensitivity and fluctuations. This instability is a known phenomenon in LoRA fine-tuning of diffusion models \parencite{luo2024privacypreservinglowrankadaptationmembership}.
+
+\subsubsection{Structural Fidelity (SSIM)}
+SSIM measures how well the generated logo adheres to the input sketch. Data analysis reveals a complex interaction between learning rate, LoRA rank, and target modules, rather than a single dominant factor. No single hyperparameter shows a consistently superior trend.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{abbildungen/ssim_en.png}
+    \caption{SSIM scores vs. learning rate, rank, and module configuration.}
+    \label{fig:ssim_vs_rank_lr}
+\end{figure}
+
+As shown in Figure \ref{fig:ssim_vs_rank_lr}, the pre-trained base model (dotted line) already achieves an excellent SSIM of 0.827. Fine-tuning does not significantly improve structural fidelity; in fact, higher learning rates ($1e-4$) in the ``extended'' configuration can slightly degrade it. This confirms that ControlNet alone provides robust structural control.
+
+\subsubsection{Semantic Alignment (CLIP Score)}
+The CLIP score evaluates the semantic correspondence between the image and the text prompt.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{abbildungen/clip_en.png}
+    \caption{CLIP scores vs. learning rate, rank, and module configuration.}
+    \label{fig:clip_vs_rank_lr}
+\end{figure}
+
+The analysis reveals complex interactions between the hyperparameters. Although the absolute differences in CLIP scores are small and within a small percentage range, clear trends can be identified: In contrast to SSIM, fine-tuning significantly improves semantic alignment (Figure \ref{fig:clip_vs_rank_lr}). The best performance is achieved with $lr=1e-4$, high rank ($r=32$), and the ``extended'' configuration, surpassing the base model by approximately 4\%. This highlights the necessity of fine-tuning for capturing domain-specific semantics.
+
+\subsubsection{Image Quality (FID)}
+FID assesses the realism and feature distribution of the generated images.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{abbildungen/fid_en.png}
+    \caption{FID scores vs. learning rate, rank, and module configuration.}
+    \label{fig:fid_vs_rank_lr}
+\end{figure}
+
+Figure \ref{fig:fid_vs_rank_lr} demonstrates that learning rate is the critical driver for image quality. The highest learning rate ($1e-4$) consistently produces the lowest (best) FID scores, improving upon the base model by roughly 28\%. The ``extended'' configuration outperforms ``attn\_only'' at this optimal learning rate.
+
+\subsubsection{Model Selection}
+To identify the optimal model, a combined metric normalizing SSIM, CLIP, and (inverted) FID was calculated.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{abbildungen/best_models.png}
+    \caption{Top 5 model configurations (normalized metrics).}
+    \label{fig:best_models}
+\end{figure}
+
+The radar chart in Figure \ref{fig:best_models} identifies the configuration with \textbf{Rank 32, $lr=1e-4$, and ``extended'' modules} as the best overall performer. It offers the best compromise, maximizing image quality and semantic alignment while maintaining acceptable structural fidelity.
+
+\subsubsection{Evaluation on Test Set}\label{sec:testresults}
+The selected model was evaluated on an unseen test set to assess generalization. Table \ref{tab:testresults} compares the base model (without and with ControlNet) against the fine-tuned model.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Model}                         & \textbf{CLIP Score} $\uparrow$ & \textbf{FID} $\downarrow$ & \textbf{SSIM} $\uparrow$ \\
+        \midrule
+        Base Model (w/o CN)                    & 0.284                          & 223.2                     & 0.617                    \\
+        Base Model (w/ CN)                     & 0.274                          & 229.0                     & 0.817                    \\
+        Finetuned Model                        & 0.284                          & 158.2                     & 0.789                    \\
+        \midrule
+        Improvement (Finetuned vs. Base w/ CN) & +3.7\%                         & -30.9\%                   & -3.4\%                   \\
+        \bottomrule
+    \end{tabular}
+    \caption{Test set metrics comparison.}
+    \label{tab:testresults}
+\end{table}
+
+The results demonstrate the distinct roles of the components:
+\begin{itemize}
+    \item \textbf{ControlNet} is essential for structure, boosting SSIM by 32.4\% compared to the unconditioned base model.
+    \item \textbf{Fine-tuning} restores semantic alignment (+3.7\% CLIP) and drastically improves image quality (-30.9\% FID). The significant FID reduction (229.0 to 158.2) outweighs the minor 3.4\% SSIM decrease (0.817 to 0.789), representing a conscious trade-off: minimal structural precision is sacrificed for enhanced semantic and visual quality.
+\end{itemize}
+The fine-tuned model successfully combines structural control with domain-specific aesthetic quality.
+
+\subsection{Qualitative Analysis}\label{sec:qualitative_analyse}
+To validate the quantitative findings, a qualitative analysis was conducted using five representative case examples (E1--E5), as illustrated in Figure \ref{fig:logo_case_studies}. Four examples (E1, E2, E3, E5) were selected based on their sketches from the test dataset to cover diverse logo types: wordmarks, pictorial/abstract marks, and combined marks. Additionally, Example E4 - a monogram based on a hand-drawn sketch - was included to test the model on authentic human input. This diversity allows for a comprehensive evaluation across design categories.
+
+For each case, both the base model (Stable Diffusion v1.5 with ControlNet) and the fine-tuned model generated a logo using the corresponding sketch and text prompt. To ensure objectivity and reproducibility, generation was performed with exactly one iteration per model, without any post-selection or optimization (no cherry-picking).
+
+\noindent\textbf{Negative Prompt (for all case examples):} \textit{sketch, photorealistic, pattern in background, noisy, blurry, watermark}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{abbildungen/comparison_overview.png}
+    \caption{Comparison of generated logos across five representative cases (E1-E5) between the base and fine-tuned models.}
+    \label{fig:logo_case_studies}
+\end{figure}
+\subsubsection{Stylistic Evaluation}
+The fine-tuned model demonstrates a superior ability to implement specific design constraints compared to the base model.
+\begin{itemize}
+    \item \textbf{Strengths:} It reliably generates ``solid backgrounds'' and consistent, minimalist color palettes, avoiding the unwanted textures often produced by the base model.
+    \item \textbf{Weaknesses:} Challenges remain in fine-grained details. For instance, text rendering (Case E3) can be deformed, and specific gradient instructions (Case E4) are occasionally ignored.
+\end{itemize}
+Despite these limitations, the fine-tuned model shows a significant improvement in generating commercially viable, minimalist logos.

@@ -1,0 +1,32 @@
+\section{Implementation}\label{sec:implementation}
+
+\subsection{Environment}
+To ensure reproducibility and efficiency, a standardized environment was established.
+\begin{itemize}
+  \item \textbf{Hardware:} NVIDIA RTX 5080 (16 GB VRAM) for mixed-precision training (FP16).
+  \item \textbf{Software:} Python-based stack utilizing \texttt{torch} and \texttt{torchvision} for deep learning operations.
+  \item \textbf{Libraries:} \texttt{diffusers} for the ControlNet pipeline, \texttt{transformers} for tokenization, and \texttt{peft} for efficient LoRA fine-tuning.
+  \item \textbf{Tracking:} MLflow \parencite{mlflow} containerized via Docker for experiment tracking and model management.
+\end{itemize}
+
+\subsection{Pipeline Design}
+The implementation follows a modular pipeline approach separating training and evaluation to ensure independent validation. A fixed random seed of 42 is used throughout to eliminate stochastic variance.
+
+\subsubsection{Training Pipeline}
+The training process orchestrates the fine-tuning of Stable Diffusion v1.5 using LoRA and ControlNet.
+\begin{enumerate}
+  \item \textbf{Initialization:} The base model, ControlNet (Lineart), and tokenizer are loaded in \texttt{bfloat16}. LoRA adapters are injected into the UNet, while the base model remains frozen.
+  \item \textbf{Training Loop:} For each step, images are encoded into latent space and noised. Text prompts are tokenized, and the model predicts noise based on the latents, text embeddings, and control maps.
+  \item \textbf{Optimization:} Gradients are calculated only for LoRA adapters using the MSE loss between predicted and actual noise. The AdamW optimizer updates the weights.
+\end{enumerate}
+
+The training process is interrupted at regular intervals to perform validation on a separate dataset, ensuring monitoring of model progress and early detection of overfitting. Each experiment is trained for a fixed duration of 14 epochs, which corresponds to exactly 2,534 training steps (181 per epoch) given a batch size of 8 and 1,448 training images. This duration aligns with the guideline of 2,500 steps (at batch size 1) recommended by \textcite{cloneofsimo_lora} for high-quality training and is consistent with findings by \textcite{ruiz2023dreamboothfinetuningtexttoimage}, who achieved good results with as few as 1,000 iterations. The checkpoint saved after completing all 2,534 steps is used for final evaluation. All relevant hyperparameters and metrics are logged via MLflow.
+
+\subsubsection{Evaluation Pipeline}\label{sec:eval_pipe}
+The evaluation pipeline quantifies model performance using the validation set.
+\begin{itemize}
+  \item \textbf{CLIP Score:} Measures semantic alignment between the generated image and the text prompt \parencite{openai_clip}.
+  \item \textbf{SSIM:} Evaluates structural fidelity. To normalize the metric and focus solely on structure, the generated image is converted into a lineart map. SSIM is then computed between this extracted lineart and the original control map \parencite{scikit-image}.
+  \item \textbf{FID:} Assesses realism and diversity by comparing the distribution of generated images against the real dataset \parencite{clean-fid}.
+\end{itemize}
+

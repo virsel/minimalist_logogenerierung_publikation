@@ -1,0 +1,38 @@
+\section{Discussion}\label{sec:diskussion}
+
+This study systematically investigated the resource-efficient specialization of a multimodal diffusion model for minimalist logo generation. By combining LoRA-based fine-tuning with ControlNet guidance, a prototype was developed that effectively processes both textual and structural constraints. This chapter interprets the findings in the context of the research objectives outlined in Chapter \ref{sec:introduction} and discusses limitations alongside future research directions.
+
+\subsection{Interpretation of Results}
+
+The experimental results demonstrate the efficacy of the proposed hybrid approach in achieving professional-grade design automation with limited resources.
+
+\paragraph{Efficacy of the Hybrid Strategy}
+The combination of ControlNet and LoRA fine-tuning proved highly effective. ControlNet ensured structural fidelity (+32.4\% SSIM), while fine-tuning successfully adapted the model to the minimalist domain, significantly improving image quality (-30.9\% FID) and semantic alignment (+3.7\% CLIP). Crucially, these gains were achieved with a compact dataset (1,500 images) and limited training iterations. This efficiency highlights the robustness of the approach and suggests significant untapped potential: scaling up data volume and training duration could yield even greater performance improvements without requiring industrial-grade resources.
+
+\paragraph{Hyperparameter Dynamics}
+The systematic analysis of LoRA hyperparameters revealed that the learning rate is the dominant factor for convergence and quality, with $lr=1e-4$ consistently outperforming lower rates. High LoRA ranks ($r=32$) combined with the ``extended'' module configuration (adapting both attention and feed-forward layers) provided the optimal balance, allowing the model sufficient capacity to learn domain-specific features without overfitting.
+
+\paragraph{Qualitative Assessment and Practical Viability}
+The qualitative analysis of representative case studies confirms that the fine-tuned model produces results that are stylistically superior to the base model, particularly in generating solid backgrounds and consistent, minimalist color palettes. The successful interpretation of a hand-drawn sketch (Case E4) highlights the model's practical potential for bridging the gap between rough ideation and polished design, effectively handling authentic human inputs.
+
+\subsection{Limitations and Future Work}
+
+While the results demonstrate the viability of the proposed pipeline, several limitations identify key areas for future optimization.
+
+\subsubsection{Data Quality and Augmentation}
+The dataset, while extensive, is limited to specific minimalist styles. The existing captions are often simplistic tags, lacking descriptive depth.
+\begin{itemize}
+    \item \textbf{Future Work:} Future iterations should employ Vision-Language Models (VLMs) to generate ultra-detailed captions and structured categorizations (e.g., wordmarks vs. pictorial marks). This would significantly enhance the model's semantic understanding \parencite{zeng-etal-2025-enhancing-large}. Additionally, synthetic sketch generation could be diversified using edge detection or dedicated sketch models to improve robustness via data augmentation.
+\end{itemize}
+
+\subsubsection{Modeling Efficiency and Stability}
+The experiments revealed training instability characteristic of LoRA fine-tuning \parencite{luo2024privacypreservinglowrankadaptationmembership}. Hardware constraints (consumer GPU) limited batch sizes to 8.
+\begin{itemize}
+    \item \textbf{Future Work:} Implementation of QLoRA (4-bit quantization) \parencite{dettmers2023qloraefficientfinetuningquantized} and ``torch.compile()'' would allow for larger batch sizes and faster training on consumer hardware. Furthermore, Bayesian optimization could replace grid search to more efficiently explore the hyperparameter space and identify stable convergence regions.
+\end{itemize}
+
+\subsubsection{Evaluation Metrics}
+Standard metrics (CLIP, FID, SSIM) do not fully capture design-specific criteria like memorability or vectorizability.
+\begin{itemize}
+    \item \textbf{Future Work:} Developing domain-specific metrics (e.g., automated vectorization success rates) and conducting larger-scale studies with professional designers would provide more robust quality assessments.
+\end{itemize}
